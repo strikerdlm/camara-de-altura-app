@@ -24,4 +24,4 @@ pip install -r requirements.txt
 echo Iniciando aplicacion...
 python main.py
 
-pause 
+pause

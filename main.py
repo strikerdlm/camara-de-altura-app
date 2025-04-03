@@ -116,4 +116,4 @@ if __name__ == "__main__":
     y = (welcome_root.winfo_screenheight() // 2) - (height // 2)
     welcome_root.geometry(f'+{x}+{y}')
     
-    welcome_root.mainloop() 
+    welcome_root.mainloop()

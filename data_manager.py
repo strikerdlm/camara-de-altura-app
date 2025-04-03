@@ -199,4 +199,4 @@ class DataManager:
             return None
         except Exception as e:
             print(f"Error exporting data to Excel: {e}")
-            return None 
+            return None

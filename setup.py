@@ -22,4 +22,4 @@ setup(
     description="Aplicación de registro para entrenamiento en cámara de altura",
     options={"build_exe": build_exe_options},
     executables=[Executable("main.py", base=base, target_name="Registro.exe", icon="assets/icon.ico")]
-) 
+)

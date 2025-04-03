@@ -63,4 +63,4 @@ class AppConfig:
     
     def save(self) -> None:
         """Save current configuration"""
-        self._save_config(self.config_data) 
+        self._save_config(self.config_data)
