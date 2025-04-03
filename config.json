@@ -1,0 +1,11 @@
+{
+    "app_name": "Registro Entrenamiento en Cámara de Altura",
+    "data_path": "data",
+    "backup_path": "backup",
+    "log_path": "logs",
+    "assets_path": "assets",
+    "autosave_interval": 10,
+    "default_profile": "IV-A",
+    "profiles": ["IV-A", "Descrompresión lenta"],
+    "curso_options": ["Primera vez", "Recurrente"]
+} 
