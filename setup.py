@@ -1,25 +1,24 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import sys
-from cx_Freeze import setup, Executable
-
-# Dependencies are automatically detected, but might need fine-tuning.
-build_exe_options = {
-    "packages": ["os", "tkinter", "ttkbootstrap", "PIL", "pandas", "datetime", "locale", "json", "logging"],
-    "excludes": [],
-    "include_files": ["assets/", "data/", "logs/", "backup/"],
-}
-
-# GUI applications require a different base on Windows
-base = None
-if sys.platform == "win32":
-    base = "Win32GUI"
+from setuptools import setup, find_packages
 
 setup(
-    name="Registro Entrenamiento en Cámara de Altura",
+    name="camara-hiperbarica-app",
     version="1.0.0",
-    description="Aplicación de registro para entrenamiento en cámara de altura",
-    options={"build_exe": build_exe_options},
-    executables=[Executable("main.py", base=base, target_name="Registro.exe", icon="assets/icon.ico")]
+    packages=find_packages(),
+    install_requires=[
+        "ttkbootstrap>=1.10.1",
+        "Pillow>=9.5.0",
+        "pandas>=2.0.0",
+        "openpyxl>=3.1.0",
+        "xlsxwriter>=3.1.0",
+        "tkinter-tooltip>=2.1.0",
+        "tkinterweb>=3.23.5",
+        "tkinter-calendar>=0.4.0",
+        "tkinter-tabview>=0.2.1",
+        "tkinter-validation>=0.1.0"
+    ],
+    author="Fuerza Aérea Colombiana",
+    author_email="",
+    description="Sistema de registro para entrenamiento en cámara hipobárica",
+    keywords="camara, hipobárica, entrenamiento, registro",
+    python_requires=">=3.8"
 )

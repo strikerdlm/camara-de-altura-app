@@ -1,11 +1,12 @@
 {
-    "app_name": "Registro Entrenamiento en Cámara de Altura",
-    "data_path": "data",
-    "backup_path": "backup",
-    "log_path": "logs",
-    "assets_path": "assets",
+    "app_name": "Registro Entrenamiento en Cámara Hipobárica",
+    "version": "1.0.0",
+    "theme": "litera",
+    "data_directory": "data",
+    "backup_directory": "backup",
+    "log_directory": "logs",
     "autosave_interval": 10,
-    "default_profile": "IV-A",
-    "profiles": ["IV-A", "Descrompresión lenta"],
-    "curso_options": ["Primera vez", "Recurrente"]
-} 
+    "debug_mode": false,
+    "language": "es_ES",
+    "default_window_size": "1200x800"
+}

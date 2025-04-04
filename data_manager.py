@@ -112,8 +112,6 @@ class DataManager:
         self.current_data = {}
         self.save_data()
 
-    # --- New Export Methods --- 
-
     def _generate_export_filename(self, extension: str) -> str:
         """Generates a timestamped filename for exports."""
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -121,12 +119,7 @@ class DataManager:
         return os.path.join(self.export_path, filename)
 
     def save_to_csv(self, filename: Optional[str] = None) -> Optional[str]:
-        """Exports the current data to a CSV file.
-
-        Attempts to flatten the data structure for CSV compatibility.
-        This might be lossy or complex depending on data structure.
-        Returns the path to the saved file or None if failed.
-        """
+        """Exports the current data to a CSV file."""
         if not self.current_data:
             print("No data to export to CSV.")
             return None
@@ -137,29 +130,20 @@ class DataManager:
              filename = os.path.join(self.export_path, filename)
 
         try:
-            # Flatten the dictionary for CSV compatibility
-            # This simple flattening might need refinement based on actual data structure
             df = pd.json_normalize(self.current_data, sep='_')
-            
-            # Ensure the export directory exists
             os.makedirs(os.path.dirname(filename), exist_ok=True)
-
-            df.to_csv(filename, index=False, encoding='utf-8-sig') # Use utf-8-sig for Excel compatibility
+            df.to_csv(filename, index=False, encoding='utf-8-sig')
             print(f"Data successfully exported to CSV: {filename}")
             return filename
         except ImportError:
-             print("Error: pandas library is required to export to CSV. Please install it.")
+             print("Error: pandas library is required to export to CSV.")
              return None
         except Exception as e:
             print(f"Error exporting data to CSV: {e}")
             return None
 
     def save_to_excel(self, filename: Optional[str] = None) -> Optional[str]:
-        """Exports the current data to an Excel file (.xlsx).
-
-        Each top-level key in the data dictionary becomes a separate sheet.
-        Returns the path to the saved file or None if failed.
-        """
+        """Exports the current data to an Excel file (.xlsx)."""
         if not self.current_data:
             print("No data to export to Excel.")
             return None
@@ -170,23 +154,18 @@ class DataManager:
              filename = os.path.join(self.export_path, filename)
 
         try:
-            # Ensure the export directory exists
             os.makedirs(os.path.dirname(filename), exist_ok=True)
 
             with pd.ExcelWriter(filename, engine='openpyxl') as writer:
                 for key, value in self.current_data.items():
-                    # Attempt to convert each section to a DataFrame
                     try:
                         if isinstance(value, dict):
-                             # Try normalizing nested dictionaries
                              df = pd.json_normalize(value, sep='_')
                         elif isinstance(value, list):
                              df = pd.DataFrame(value)
                         else:
-                             # Handle simple key-value pairs (like 'last_saved')
                              df = pd.DataFrame({key: [value]})
                         
-                        # Sanitize sheet name (max 31 chars, no invalid chars)
                         sheet_name = str(key).replace('[', '').replace(']', '').replace('*', '').replace(':', '').replace('?', '').replace('/', '').replace('\\','')[:31]
                         df.to_excel(writer, sheet_name=sheet_name, index=False, engine='openpyxl')
                     except Exception as sheet_error:
@@ -195,7 +174,7 @@ class DataManager:
             print(f"Data successfully exported to Excel: {filename}")
             return filename
         except ImportError:
-            print("Error: pandas and openpyxl libraries are required to export to Excel. Please install them.")
+            print("Error: pandas and openpyxl libraries are required to export to Excel.")
             return None
         except Exception as e:
             print(f"Error exporting data to Excel: {e}")
