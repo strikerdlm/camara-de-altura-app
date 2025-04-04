@@ -2,222 +2,182 @@
 # -*- coding: utf-8 -*-
 
 import tkinter as tk
-from tkinter import ttk
 import ttkbootstrap as ttkb
-from ttkbootstrap.constants import *
+from tkinter import messagebox
+from typing import Dict, Any
+import json
+import os
 from datetime import datetime
-import locale
-from typing import Optional, Dict, Any, List
-import pandas as pd
 
 class RDTab(ttkb.Frame):
-    """Tab for rapid decompression (RD) profile data"""
+    """Tab for managing RD records."""
     
     def __init__(self, parent, data_manager):
-        super().__init__(parent, padding=20)
+        super().__init__(parent, padding=10)
+        self.parent = parent
         self.data_manager = data_manager
         
-        # RD options defined by the rule
-        self.oi_options = ["OI1", "OI2"]
-        self.original_seat_options = [str(i) for i in range(1, 9)] # Seats 1-8
-        self.new_seat_options = ["7", "8"] # Target seats 7 or 8
-        
-        # RD data structure based on rule (rd1, rd2)
-        self.rd_data = {}
-        self.initialize_data()
+        # Create variables for form fields
+        self.variables = {}
+        self.create_variables()
         
         # Create the layout
         self.create_widgets()
+        self.load_data()
+    
+    def create_variables(self):
+        """Create variables for form fields."""
+        # RD data
+        self.variables['fecha'] = tk.StringVar()
+        self.variables['hora_inicio'] = tk.StringVar()
+        self.variables['hora_fin'] = tk.StringVar()
+        self.variables['tipo_rd'] = tk.StringVar()
+        self.variables['descripcion'] = tk.StringVar()
+        self.variables['observaciones'] = tk.StringVar()
         
-    def initialize_data(self):
-        """Initialize or load RD data for RD1 and RD2 profiles."""
-        # Default structure for one profile
-        default_profile_data = {
-            'oi': self.oi_options[0], # Default to OI1
-            'original_seat': self.original_seat_options[0], # Default to 1
-            'new_seat': self.new_seat_options[0], # Default to 7
-            'novedad': ''
-        }
-
-        # Try to load RD data from data manager
-        loaded_data = {}
-        if hasattr(self.data_manager, 'current_data') and 'rd_data' in self.data_manager.current_data:
-            loaded_data = self.data_manager.current_data.get('rd_data', {})
-            # Ensure loaded data has the expected keys, otherwise use defaults
-            if not isinstance(loaded_data.get('rd1'), dict):
-                 loaded_data['rd1'] = default_profile_data.copy()
-            if not isinstance(loaded_data.get('rd2'), dict):
-                 loaded_data['rd2'] = default_profile_data.copy()
-        else:
-            # Create empty data structure with defaults if nothing loaded
-            loaded_data = {
-                'rd1': default_profile_data.copy(),
-                'rd2': default_profile_data.copy()
-            }
-        
-        self.rd_data = loaded_data
-
+        # Operator data
+        self.variables['operador_nombre'] = tk.StringVar()
+        self.variables['operador_grado'] = tk.StringVar()
+        self.variables['operador_unidad'] = tk.StringVar()
+    
     def create_widgets(self):
-        """Create the tab UI widgets for RD1 and RD2."""
+        """Create the tab UI widgets."""
+        # Configure grid
+        self.columnconfigure(1, weight=1)
         
-        # Title
-        title_label = ttkb.Label(
-            self, 
-            text="PERFIL RD (DESCOMPRESIÓN RÁPIDA)", 
+        # Header
+        header = ttkb.Label(
+            self,
+            text="Registro de RD",
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )
-        title_label.pack(pady=(0, 20))
-
-        # --- RD1 Section --- 
-        rd1_frame = ttkb.LabelFrame(self, text="RD 1", padding=15, bootstyle="info")
-        rd1_frame.pack(fill=tk.X, pady=10)
-        self.rd1_vars = self._create_profile_widgets(rd1_frame, self.rd_data['rd1'])
-
-        # --- RD2 Section --- 
-        rd2_frame = ttkb.LabelFrame(self, text="RD 2", padding=15, bootstyle="info")
-        rd2_frame.pack(fill=tk.X, pady=10)
-        self.rd2_vars = self._create_profile_widgets(rd2_frame, self.rd_data['rd2'])
+        header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
         
-        # --- Removed old operators/observations sections --- 
-
-        # Action buttons (consider placing them outside frames if needed)
+        # RD data section
+        rd_frame = ttkb.Labelframe(
+            self,
+            text="Datos del RD",
+            padding=10
+        )
+        rd_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        rd_frame.columnconfigure(1, weight=1)
+        
+        # RD data fields
+        fields = [
+            ('Fecha:', 'fecha'),
+            ('Hora Inicio:', 'hora_inicio'),
+            ('Hora Fin:', 'hora_fin'),
+            ('Tipo de RD:', 'tipo_rd'),
+            ('Descripción:', 'descripcion'),
+            ('Observaciones:', 'observaciones')
+        ]
+        
+        for i, (label_text, var_name) in enumerate(fields):
+            label = ttkb.Label(rd_frame, text=label_text)
+            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+            
+            if var_name in ['descripcion', 'observaciones']:
+                entry = ttkb.Entry(
+                    rd_frame,
+                    textvariable=self.variables[var_name]
+                )
+                entry.grid(
+                    row=i, column=1, columnspan=3, sticky="ew", padx=5, pady=2
+                )
+            else:
+                entry = ttkb.Entry(
+                    rd_frame,
+                    textvariable=self.variables[var_name]
+                )
+                entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
+        
+        # Operator section
+        operator_frame = ttkb.Labelframe(
+            self,
+            text="Datos del Operador",
+            padding=10
+        )
+        operator_frame.grid(
+            row=2, column=0, columnspan=2, sticky="ew", pady=(0, 10)
+        )
+        operator_frame.columnconfigure(1, weight=1)
+        
+        # Operator fields
+        operator_fields = [
+            ('Nombre:', 'operador_nombre'),
+            ('Grado:', 'operador_grado'),
+            ('Unidad:', 'operador_unidad')
+        ]
+        
+        for i, (label_text, var_name) in enumerate(operator_fields):
+            label = ttkb.Label(operator_frame, text=label_text)
+            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+            
+            entry = ttkb.Entry(
+                operator_frame,
+                textvariable=self.variables[var_name]
+            )
+            entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
+        
+        # Buttons
         button_frame = ttkb.Frame(self)
-        button_frame.pack(fill=tk.X, pady=20, side=tk.BOTTOM) # Place at bottom
+        button_frame.grid(row=3, column=0, columnspan=2, sticky="ew")
         
         save_btn = ttkb.Button(
-            button_frame, 
-            text="Guardar Datos RD", 
+            button_frame,
+            text="Guardar Datos",
             command=self.save_data,
-            bootstyle="success", # Updated style
+            bootstyle="success",
             width=15
         )
         save_btn.pack(side=tk.RIGHT, padx=5)
         
         clear_btn = ttkb.Button(
-            button_frame, 
-            text="Limpiar Datos RD", 
+            button_frame,
+            text="Limpiar Campos",
             command=self.clear_form,
-            bootstyle="warning", # Updated style
+            bootstyle="warning",
             width=15
         )
         clear_btn.pack(side=tk.RIGHT, padx=5)
-
-    def _create_profile_widgets(self, parent_frame, profile_data):
-        """Helper function to create widgets for a single RD profile."""
-        widgets = {}
-        row = 0
-
-        # OI (Operador Interno)
-        oi_label = ttkb.Label(parent_frame, text="Operador Interno (OI):")
-        oi_label.grid(row=row, column=0, padx=5, pady=5, sticky='w')
-        widgets['oi'] = tk.StringVar(value=profile_data.get('oi', self.oi_options[0]))
-        oi_combo = ttkb.Combobox(
-            parent_frame, 
-            textvariable=widgets['oi'],
-            values=self.oi_options,
-            width=8,
-            state="readonly"
-        )
-        oi_combo.grid(row=row, column=1, padx=5, pady=5, sticky='w')
-        row += 1
-
-        # Silla (Original Seat)
-        silla_label = ttkb.Label(parent_frame, text="Silla Original:")
-        silla_label.grid(row=row, column=0, padx=5, pady=5, sticky='w')
-        widgets['original_seat'] = tk.StringVar(value=profile_data.get('original_seat', self.original_seat_options[0]))
-        silla_combo = ttkb.Combobox(
-            parent_frame, 
-            textvariable=widgets['original_seat'],
-            values=self.original_seat_options,
-            width=8,
-            state="readonly"
-        )
-        silla_combo.grid(row=row, column=1, padx=5, pady=5, sticky='w')
-        row += 1
-
-        # Nueva Posición (New Seat)
-        new_seat_label = ttkb.Label(parent_frame, text="Nueva Posición:")
-        new_seat_label.grid(row=row, column=0, padx=5, pady=5, sticky='w')
-        widgets['new_seat'] = tk.StringVar(value=profile_data.get('new_seat', self.new_seat_options[0]))
-        new_seat_combo = ttkb.Combobox(
-            parent_frame, 
-            textvariable=widgets['new_seat'],
-            values=self.new_seat_options,
-            width=8,
-            state="readonly"
-        )
-        new_seat_combo.grid(row=row, column=1, padx=5, pady=5, sticky='w')
-        row += 1
-
-        # Novedad (Incident Description)
-        novedad_label = ttkb.Label(parent_frame, text="Novedad:")
-        novedad_label.grid(row=row, column=0, padx=5, pady=5, sticky='nw') # Align north-west
-        widgets['novedad'] = tk.StringVar(value=profile_data.get('novedad', ''))
-        novedad_entry = ttkb.Entry(
-            parent_frame, 
-            textvariable=widgets['novedad'],
-            width=40 # Adjust width as needed
-        )
-        novedad_entry.grid(row=row, column=1, padx=5, pady=5, sticky='ew') # Expand horizontally
-        
-        # Configure column weights for resizing
-        parent_frame.columnconfigure(1, weight=1)
-
-        return widgets
     
-    def collect_data(self) -> Dict[str, Any]:
-        """Collect RD data from both profile forms."""
-        data = {
-            'rd1': {
-                'oi': self.rd1_vars['oi'].get(),
-                'original_seat': self.rd1_vars['original_seat'].get(),
-                'new_seat': self.rd1_vars['new_seat'].get(),
-                'novedad': self.rd1_vars['novedad'].get()
-            },
-            'rd2': {
-                'oi': self.rd2_vars['oi'].get(),
-                'original_seat': self.rd2_vars['original_seat'].get(),
-                'new_seat': self.rd2_vars['new_seat'].get(),
-                'novedad': self.rd2_vars['novedad'].get()
-            }
-        }
-        return data
+    def load_data(self):
+        """Load RD data into the form fields."""
+        # Get RD data from data manager
+        rd_data = self.data_manager.current_data.get('rd', {})
+        
+        # Load data into variables
+        for var_name, var in self.variables.items():
+            var.set(rd_data.get(var_name, ''))
     
     def save_data(self):
-        """Save RD data for both profiles."""
-        self.rd_data = self.collect_data()
+        """Save form data."""
+        # Collect data from all variables
+        rd_data = {}
+        for var_name, var in self.variables.items():
+            rd_data[var_name] = var.get()
         
-        if hasattr(self.data_manager, 'current_data'):
-            self.data_manager.current_data['rd_data'] = self.rd_data
-            # Ensure the main save_data method exists and handles saving the whole structure
-            if hasattr(self.data_manager, 'save_data') and callable(self.data_manager.save_data):
-                self.data_manager.save_data()
-                print("RD data saved.")
-            else:
-                 print("Error: DataManager does not have a callable save_data method.")
-        else:
-            print("Error: DataManager or current_data not found.")
+        # Save to data manager
+        self.data_manager.current_data['rd'] = rd_data
+        self.data_manager.save_data()
+        
+        # Show success message
+        messagebox.showinfo(
+            "Guardado",
+            "Datos de RD guardados exitosamente"
+        )
     
     def clear_form(self):
-        """Clear all RD data fields for both profiles."""
-        # Default values
-        default_oi = self.oi_options[0]
-        default_orig_seat = self.original_seat_options[0]
-        default_new_seat = self.new_seat_options[0]
-
-        # Clear RD1
-        self.rd1_vars['oi'].set(default_oi)
-        self.rd1_vars['original_seat'].set(default_orig_seat)
-        self.rd1_vars['new_seat'].set(default_new_seat)
-        self.rd1_vars['novedad'].set('')
-
-        # Clear RD2
-        self.rd2_vars['oi'].set(default_oi)
-        self.rd2_vars['original_seat'].set(default_orig_seat)
-        self.rd2_vars['new_seat'].set(default_new_seat)
-        self.rd2_vars['novedad'].set('')
-
-        # Optionally, immediately save the cleared state
-        # self.save_data()
-        print("RD form cleared.") 
+        """Clear all form fields."""
+        # Ask for confirmation
+        if messagebox.askyesno(
+            "Confirmar",
+            "¿Está seguro de que desea limpiar todos los campos?"
+        ):
+            # Clear all variables
+            for var in self.variables.values():
+                var.set('')
+            
+            # Show confirmation
+            messagebox.showinfo("Limpieza", "Campos limpiados exitosamente")
