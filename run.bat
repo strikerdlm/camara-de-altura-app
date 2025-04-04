@@ -210,6 +210,10 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
+<<<<<<< HEAD
 echo Presione cualquier tecla para salir...
 pause >nul
 exit /b 0 
+=======
+pause
+>>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3

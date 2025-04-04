@@ -182,4 +182,4 @@ if __name__ == "__main__":
     create_logo()
     create_icon()
     create_welcome_screen()
-    print("Placeholder assets created successfully.") 
+    print("Placeholder assets created successfully.")

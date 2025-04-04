@@ -1,202 +1,125 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 import json
-import datetime
+import os
+from datetime import datetime
 import shutil
-from typing import Dict, Any, Optional
 import pandas as pd
+from typing import Dict, Any, Optional
 
 class DataManager:
-    """Data manager for the application"""
+    """Data management class for the application."""
     
-    def __init__(self):
-        """Initialize the data manager"""
-        # Setup file paths
-        self.base_path = os.path.dirname(__file__)
-        self.data_path = os.path.join(self.base_path, 'data')
-        self.backup_path = os.path.join(self.base_path, 'backup')
-        self.export_path = os.path.join(self.base_path, 'exports') # New path for exports
-        self.current_file = os.path.join(self.data_path, 'current_session.json')
+    def __init__(self, data_dir: str = 'data', backup_dir: str = 'backup'):
+        self.data_dir = data_dir
+        self.backup_dir = backup_dir
+        self.current_file: Optional[str] = None
+        self.current_data: Dict[str, Any] = {}
         
-        # Create directories if they don't exist
-        os.makedirs(self.data_path, exist_ok=True)
-        os.makedirs(self.backup_path, exist_ok=True)
-        os.makedirs(self.export_path, exist_ok=True) # Create exports directory
-        
-        # Initialize or load current data
-        self.current_data = self._load_data()
+        # Create necessary directories
+        os.makedirs(data_dir, exist_ok=True)
+        os.makedirs(backup_dir, exist_ok=True)
     
-    def _load_data(self) -> Dict[str, Any]:
-        """Load data from current session file"""
-        if os.path.exists(self.current_file):
-            try:
-                with open(self.current_file, 'r', encoding='utf-8') as f:
+    def _load_data(self, file_path: str) -> Dict[str, Any]:
+        """Load data from a JSON file."""
+        try:
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
-            except Exception as e:
-                print(f"Error loading data: {e}")
-                # If error loading, create backup of corrupted file
-                self._backup_file(self.current_file, reason="corrupted")
-        
-        # Return empty data structure if no file exists or error loading
-        return {}
+            return {}
+        except Exception as e:
+            print(f"Error loading data: {e}")
+            return {}
     
     def save_data(self) -> None:
-        """Save current data to file"""
+        """Save current data to file."""
+        if not self.current_file:
+            return
+        
         try:
-            # Add timestamp for when data was last saved
-            self.current_data['last_saved'] = datetime.datetime.now().isoformat()
+            # Create backup before saving
+            self.create_backup()
             
-            # Create data directory if it doesn't exist
-            os.makedirs(os.path.dirname(self.current_file), exist_ok=True)
-            
-            # Save data
+            # Save current data
             with open(self.current_file, 'w', encoding='utf-8') as f:
-                json.dump(self.current_data, f, indent=4, ensure_ascii=False)
+                json.dump(self.current_data, f, indent=4)
         except Exception as e:
             print(f"Error saving data: {e}")
     
-    def _backup_file(self, file_path: str, reason: str = "backup") -> None:
-        """Create a backup of a file"""
-        if not os.path.exists(file_path):
-            return
+    def _backup_file(self, source: str) -> str:
+        """Create a backup of a file."""
+        if not os.path.exists(source):
+            return ""
         
-        # Get base filename
-        filename = os.path.basename(file_path)
-        name, ext = os.path.splitext(filename)
+        # Generate backup filename with timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = os.path.basename(source)
+        backup_name = f"{os.path.splitext(filename)[0]}_{timestamp}.bak"
+        backup_path = os.path.join(self.backup_dir, backup_name)
         
-        # Create backup filename with timestamp
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_name = f"{name}_{reason}_{timestamp}{ext}"
-        backup_path = os.path.join(self.backup_path, backup_name)
-        
-        # Create backup directory if it doesn't exist
-        os.makedirs(self.backup_path, exist_ok=True)
-        
-        # Copy file to backup
         try:
-            shutil.copy2(file_path, backup_path)
-            print(f"Created backup: {backup_path}")
+            shutil.copy2(source, backup_path)
+            return backup_path
         except Exception as e:
             print(f"Error creating backup: {e}")
+            return ""
     
-    def create_backup(self) -> None:
-        """Create a manual backup of current data"""
-        self._backup_file(self.current_file)
+    def create_backup(self) -> str:
+        """Create a backup of the current data file."""
+        if not self.current_file or not os.path.exists(self.current_file):
+            return ""
+        
+        return self._backup_file(self.current_file)
     
-    def save_as_new_session(self) -> None:
-        """Save current data as a new session file"""
-        # Create backup of current session
-        self.create_backup()
+    def save_as_new_session(self, session_name: str) -> bool:
+        """Save current data as a new session."""
+        if not session_name:
+            return False
         
-        # Create a filename with timestamp
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        new_filename = f"session_{timestamp}.json"
-        new_file_path = os.path.join(self.data_path, new_filename)
+        # Generate new filename
+        filename = f"{session_name}.json"
+        new_file = os.path.join(self.data_dir, filename)
         
-        # Save data to new file
         try:
-            with open(new_file_path, 'w', encoding='utf-8') as f:
-                json.dump(self.current_data, f, indent=4, ensure_ascii=False)
-            print(f"Saved new session: {new_file_path}")
+            # Save current data to new file
+            with open(new_file, 'w', encoding='utf-8') as f:
+                json.dump(self.current_data, f, indent=4)
+            
+            # Update current file
+            self.current_file = new_file
+            return True
         except Exception as e:
             print(f"Error saving new session: {e}")
+            return False
     
     def clear_data(self) -> None:
-        """Clear all current data (with backup)"""
-        # Create backup before clearing
-        self.create_backup()
-        
-        # Clear data
+        """Clear current data."""
         self.current_data = {}
-        self.save_data()
-
-    # --- New Export Methods --- 
-
-    def _generate_export_filename(self, extension: str) -> str:
-        """Generates a timestamped filename for exports."""
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"session_export_{timestamp}.{extension}"
-        return os.path.join(self.export_path, filename)
-
-    def save_to_csv(self, filename: Optional[str] = None) -> Optional[str]:
-        """Exports the current data to a CSV file.
-
-        Attempts to flatten the data structure for CSV compatibility.
-        This might be lossy or complex depending on data structure.
-        Returns the path to the saved file or None if failed.
-        """
-        if not self.current_data:
-            print("No data to export to CSV.")
-            return None
-
-        if filename is None:
-            filename = self._generate_export_filename("csv")
-        elif not os.path.isabs(filename):
-             filename = os.path.join(self.export_path, filename)
-
+        self.current_file = None
+    
+    def save_to_csv(self, file_path: str) -> bool:
+        """Export current data to CSV format."""
         try:
-            # Flatten the dictionary for CSV compatibility
-            # This simple flattening might need refinement based on actual data structure
-            df = pd.json_normalize(self.current_data, sep='_')
+            # Convert data to DataFrame
+            df = pd.DataFrame([self.current_data])
             
-            # Ensure the export directory exists
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
-
-            df.to_csv(filename, index=False, encoding='utf-8-sig') # Use utf-8-sig for Excel compatibility
-            print(f"Data successfully exported to CSV: {filename}")
-            return filename
-        except ImportError:
-             print("Error: pandas library is required to export to CSV. Please install it.")
-             return None
+            # Save to CSV
+            df.to_csv(file_path, index=False)
+            return True
         except Exception as e:
-            print(f"Error exporting data to CSV: {e}")
-            return None
-
-    def save_to_excel(self, filename: Optional[str] = None) -> Optional[str]:
-        """Exports the current data to an Excel file (.xlsx).
-
-        Each top-level key in the data dictionary becomes a separate sheet.
-        Returns the path to the saved file or None if failed.
-        """
-        if not self.current_data:
-            print("No data to export to Excel.")
-            return None
-        
-        if filename is None:
-            filename = self._generate_export_filename("xlsx")
-        elif not os.path.isabs(filename):
-             filename = os.path.join(self.export_path, filename)
-
+            print(f"Error exporting to CSV: {e}")
+            return False
+    
+    def save_to_excel(self, file_path: str) -> bool:
+        """Export current data to Excel format."""
         try:
-            # Ensure the export directory exists
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
-
-            with pd.ExcelWriter(filename, engine='openpyxl') as writer:
-                for key, value in self.current_data.items():
-                    # Attempt to convert each section to a DataFrame
-                    try:
-                        if isinstance(value, dict):
-                             # Try normalizing nested dictionaries
-                             df = pd.json_normalize(value, sep='_')
-                        elif isinstance(value, list):
-                             df = pd.DataFrame(value)
-                        else:
-                             # Handle simple key-value pairs (like 'last_saved')
-                             df = pd.DataFrame({key: [value]})
-                        
-                        # Sanitize sheet name (max 31 chars, no invalid chars)
-                        sheet_name = str(key).replace('[', '').replace(']', '').replace('*', '').replace(':', '').replace('?', '').replace('/', '').replace('\\','')[:31]
-                        df.to_excel(writer, sheet_name=sheet_name, index=False, engine='openpyxl')
-                    except Exception as sheet_error:
-                        print(f"Could not convert section '{key}' to Excel sheet: {sheet_error}")
+            # Convert data to DataFrame
+            df = pd.DataFrame([self.current_data])
             
-            print(f"Data successfully exported to Excel: {filename}")
-            return filename
-        except ImportError:
-            print("Error: pandas and openpyxl libraries are required to export to Excel. Please install them.")
-            return None
+            # Save to Excel
+            df.to_excel(file_path, index=False)
+            return True
         except Exception as e:
-            print(f"Error exporting data to Excel: {e}")
-            return None 
+            print(f"Error exporting to Excel: {e}")
+            return False

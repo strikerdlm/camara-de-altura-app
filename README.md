@@ -1,6 +1,10 @@
 # Cámara Hipobárica - Sistema de Registro
 
+<<<<<<< HEAD
 Sistema integrado para el registro de entrenamiento en cámara hiperbárica desarrollado para la Fuerza Aeroespacial Colombiana.
+=======
+Sistema integrado para el registro de entrenamiento en cámara hipobárica desarrollado para la Fuerza Aérea Colombiana.
+>>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
 
 ## Descripción
 
@@ -140,8 +144,16 @@ Para desarrolladores que deseen extender o modificar la aplicación:
 
 ## Licencia
 
+<<<<<<< HEAD
 Todos los derechos reservados - Fuerza Aeroespacial Colombiana.
 Creado por: Diego L. Malpica MD, Aerospace Medicine Specialist
 ---
 
 © 2025 Fuerza Aeroespacial Colombiana 
+=======
+Todos los derechos reservados - Fuerza Aérea Colombiana.
+
+---
+
+© 2024 Fuerza Aérea Colombiana
+>>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3

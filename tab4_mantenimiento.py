@@ -9,8 +9,8 @@ import json
 import os
 from datetime import datetime
 
-class RDTab(ttkb.Frame):
-    """Tab for managing RD records."""
+class MantenimientoTab(ttkb.Frame):
+    """Tab for managing maintenance records."""
     
     def __init__(self, parent, data_manager):
         super().__init__(parent, padding=10)
@@ -27,66 +27,66 @@ class RDTab(ttkb.Frame):
     
     def create_variables(self):
         """Create variables for form fields."""
-        # RD data
+        # Maintenance data
         self.variables['fecha'] = tk.StringVar()
         self.variables['hora_inicio'] = tk.StringVar()
         self.variables['hora_fin'] = tk.StringVar()
-        self.variables['tipo_rd'] = tk.StringVar()
+        self.variables['tipo_mantenimiento'] = tk.StringVar()
         self.variables['descripcion'] = tk.StringVar()
+        self.variables['piezas_cambiadas'] = tk.StringVar()
         self.variables['observaciones'] = tk.StringVar()
         
-        # Operator data
-        self.variables['operador_nombre'] = tk.StringVar()
-        self.variables['operador_grado'] = tk.StringVar()
-        self.variables['operador_unidad'] = tk.StringVar()
+        # Technician data
+        self.variables['tecnico_nombre'] = tk.StringVar()
+        self.variables['tecnico_grado'] = tk.StringVar()
+        self.variables['tecnico_unidad'] = tk.StringVar()
+        
+        # Supervisor data
+        self.variables['supervisor_nombre'] = tk.StringVar()
+        self.variables['supervisor_grado'] = tk.StringVar()
+        self.variables['supervisor_unidad'] = tk.StringVar()
     
     def create_widgets(self):
         """Create the tab UI widgets."""
         # Configure grid
         self.columnconfigure(1, weight=1)
         
-<<<<<<< HEAD
-        # Title
-        title_label = ttkb.Label(
-            self, 
-            text="PERFIL DE DESCOMPRESIÓN RÁPIDA", 
-=======
         # Header
         header = ttkb.Label(
             self,
-            text="Registro de RD",
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
+            text="Registro de Mantenimiento",
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )
         header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
         
-        # RD data section
-        rd_frame = ttkb.Labelframe(
+        # Maintenance data section
+        maint_frame = ttkb.Labelframe(
             self,
-            text="Datos del RD",
+            text="Datos del Mantenimiento",
             padding=10
         )
-        rd_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
-        rd_frame.columnconfigure(1, weight=1)
+        maint_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        maint_frame.columnconfigure(1, weight=1)
         
-        # RD data fields
+        # Maintenance data fields
         fields = [
             ('Fecha:', 'fecha'),
             ('Hora Inicio:', 'hora_inicio'),
             ('Hora Fin:', 'hora_fin'),
-            ('Tipo de RD:', 'tipo_rd'),
+            ('Tipo de Mantenimiento:', 'tipo_mantenimiento'),
             ('Descripción:', 'descripcion'),
+            ('Piezas Cambiadas:', 'piezas_cambiadas'),
             ('Observaciones:', 'observaciones')
         ]
         
         for i, (label_text, var_name) in enumerate(fields):
-            label = ttkb.Label(rd_frame, text=label_text)
+            label = ttkb.Label(maint_frame, text=label_text)
             label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
             
-            if var_name in ['descripcion', 'observaciones']:
+            if var_name in ['descripcion', 'piezas_cambiadas', 'observaciones']:
                 entry = ttkb.Entry(
-                    rd_frame,
+                    maint_frame,
                     textvariable=self.variables[var_name]
                 )
                 entry.grid(
@@ -94,42 +94,66 @@ class RDTab(ttkb.Frame):
                 )
             else:
                 entry = ttkb.Entry(
-                    rd_frame,
+                    maint_frame,
                     textvariable=self.variables[var_name]
                 )
                 entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
         
-        # Operator section
-        operator_frame = ttkb.Labelframe(
+        # Technician section
+        tech_frame = ttkb.Labelframe(
             self,
-            text="Datos del Operador",
+            text="Datos del Técnico",
             padding=10
         )
-        operator_frame.grid(
-            row=2, column=0, columnspan=2, sticky="ew", pady=(0, 10)
-        )
-        operator_frame.columnconfigure(1, weight=1)
+        tech_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        tech_frame.columnconfigure(1, weight=1)
         
-        # Operator fields
-        operator_fields = [
-            ('Nombre:', 'operador_nombre'),
-            ('Grado:', 'operador_grado'),
-            ('Unidad:', 'operador_unidad')
+        # Technician fields
+        tech_fields = [
+            ('Nombre:', 'tecnico_nombre'),
+            ('Grado:', 'tecnico_grado'),
+            ('Unidad:', 'tecnico_unidad')
         ]
         
-        for i, (label_text, var_name) in enumerate(operator_fields):
-            label = ttkb.Label(operator_frame, text=label_text)
+        for i, (label_text, var_name) in enumerate(tech_fields):
+            label = ttkb.Label(tech_frame, text=label_text)
             label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
             
             entry = ttkb.Entry(
-                operator_frame,
+                tech_frame,
+                textvariable=self.variables[var_name]
+            )
+            entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
+        
+        # Supervisor section
+        super_frame = ttkb.Labelframe(
+            self,
+            text="Datos del Supervisor",
+            padding=10
+        )
+        super_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 10))
+        super_frame.columnconfigure(1, weight=1)
+        
+        # Supervisor fields
+        super_fields = [
+            ('Nombre:', 'supervisor_nombre'),
+            ('Grado:', 'supervisor_grado'),
+            ('Unidad:', 'supervisor_unidad')
+        ]
+        
+        for i, (label_text, var_name) in enumerate(super_fields):
+            label = ttkb.Label(super_frame, text=label_text)
+            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+            
+            entry = ttkb.Entry(
+                super_frame,
                 textvariable=self.variables[var_name]
             )
             entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
         
         # Buttons
         button_frame = ttkb.Frame(self)
-        button_frame.grid(row=3, column=0, columnspan=2, sticky="ew")
+        button_frame.grid(row=4, column=0, columnspan=2, sticky="ew")
         
         save_btn = ttkb.Button(
             button_frame,
@@ -150,29 +174,29 @@ class RDTab(ttkb.Frame):
         clear_btn.pack(side=tk.RIGHT, padx=5)
     
     def load_data(self):
-        """Load RD data into the form fields."""
-        # Get RD data from data manager
-        rd_data = self.data_manager.current_data.get('rd', {})
+        """Load maintenance data into the form fields."""
+        # Get maintenance data from data manager
+        maint_data = self.data_manager.current_data.get('mantenimiento', {})
         
         # Load data into variables
         for var_name, var in self.variables.items():
-            var.set(rd_data.get(var_name, ''))
+            var.set(maint_data.get(var_name, ''))
     
     def save_data(self):
         """Save form data."""
         # Collect data from all variables
-        rd_data = {}
+        maint_data = {}
         for var_name, var in self.variables.items():
-            rd_data[var_name] = var.get()
+            maint_data[var_name] = var.get()
         
         # Save to data manager
-        self.data_manager.current_data['rd'] = rd_data
+        self.data_manager.current_data['mantenimiento'] = maint_data
         self.data_manager.save_data()
         
         # Show success message
         messagebox.showinfo(
             "Guardado",
-            "Datos de RD guardados exitosamente"
+            "Datos de mantenimiento guardados exitosamente"
         )
     
     def clear_form(self):
