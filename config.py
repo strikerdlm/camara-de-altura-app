@@ -1,66 +1,62 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 import json
-from typing import Dict, Any, Optional
+import os
+from typing import Any, Dict
 
 class AppConfig:
-    """Configuration manager for the application"""
+    """Application configuration manager."""
     
-    def __init__(self):
-        """Initialize the configuration manager"""
-        self.config_path = os.path.join(os.path.dirname(__file__), "config.json")
-        self.config_data = self._load_config()
-        
-    def _load_config(self) -> Dict[str, Any]:
-        """Load configuration from JSON file"""
-        default_config = {
-            "app_name": "Registro Entrenamiento en Cámara de Altura",
-            "version": "1.0.0",
-            "theme": "litera",
-            "data_directory": os.path.join(os.path.dirname(__file__), "data"),
-            "backup_directory": os.path.join(os.path.dirname(__file__), "backup"),
-            "log_directory": os.path.join(os.path.dirname(__file__), "logs"),
-            "autosave_interval": 60,  # seconds
-            "debug_mode": False
+    def __init__(self, config_file: str = 'config.json'):
+        self.config_file = config_file
+        self.config: Dict[str, Any] = {
+            'app_name': 'Cámara Hipobárica',
+            'version': '1.0.0',
+            'theme': 'darkly',
+            'data_dir': 'data',
+            'backup_dir': 'backup',
+            'log_dir': 'logs',
+            'autosave_interval': 300,  # 5 minutes
+            'debug': False
         }
         
-        # Create directories if they don't exist
-        for dir_key in ["data_directory", "backup_directory", "log_directory"]:
-            os.makedirs(default_config[dir_key], exist_ok=True)
+        # Create necessary directories
+        os.makedirs(self.config['data_dir'], exist_ok=True)
+        os.makedirs(self.config['backup_dir'], exist_ok=True)
+        os.makedirs(self.config['log_dir'], exist_ok=True)
         
-        # Try to load existing config
+        # Load configuration
+        self._load_config()
+    
+    def _load_config(self) -> None:
+        """Load configuration from file."""
         try:
-            if os.path.exists(self.config_path):
-                with open(self.config_path, 'r', encoding='utf-8') as f:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r', encoding='utf-8') as f:
                     loaded_config = json.load(f)
-                    # Merge with default config to ensure all keys exist
-                    return {**default_config, **loaded_config}
+                    self.config.update(loaded_config)
         except Exception as e:
             print(f"Error loading config: {e}")
-        
-        # If no config exists or error loading, create a new one
-        self._save_config(default_config)
-        return default_config
+            # Use default config if loading fails
     
-    def _save_config(self, config_data: Dict[str, Any]) -> None:
-        """Save configuration to JSON file"""
+    def _save_config(self) -> None:
+        """Save configuration to file."""
         try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                json.dump(config_data, f, indent=4)
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=4)
         except Exception as e:
             print(f"Error saving config: {e}")
     
-    def get_setting(self, key: str, default: Any = None) -> Any:
-        """Get a configuration setting"""
-        return self.config_data.get(key, default)
+    def get_setting(self, key: str) -> Any:
+        """Get a configuration setting."""
+        return self.config.get(key)
     
     def set_setting(self, key: str, value: Any) -> None:
-        """Set a configuration setting"""
-        self.config_data[key] = value
-        self._save_config(self.config_data)
+        """Set a configuration setting."""
+        self.config[key] = value
+        self.save()
     
     def save(self) -> None:
-        """Save current configuration"""
-        self._save_config(self.config_data)
+        """Save current configuration."""
+        self._save_config()
