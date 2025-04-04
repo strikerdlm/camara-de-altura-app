@@ -47,4 +47,15 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Notebooks
-.ipynb_checkpoints 
+.ipynb_checkpoints
+
+# Ignore Cursor-specific files that may contain sensitive data
+.cursor/
+
+# Ignore large backup files
+app_backup/a_camara.rar
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini 
