@@ -1,125 +1,147 @@
-# Registro Entrenamiento en Cámara de Altura
+# Cámara Hiperbárica - Sistema de Registro
 
-Aplicación para registrar datos de entrenamiento en cámara de altura.
+Sistema integrado para el registro de entrenamiento en cámara hiperbárica desarrollado para la Fuerza Aérea Colombiana.
 
-## Requisitos
+## Descripción
 
-- Python 3.8 o superior
-- Bibliotecas Python (ver requirements.txt)
+Esta aplicación permite el registro y seguimiento de entrenamientos en cámara de altura, incluyendo datos de vuelo, alumnos, tiempos, reactores y descompresión rápida.
 
-## Instalación
+## Requisitos del Sistema
 
-1. Clonar o descargar este repositorio
+- **Python 3.8 o superior** con soporte para Tkinter
+- Espacio en disco: Aproximadamente 500 MB (incluyendo entorno virtual)
+- RAM mínima: 2 GB
 
-2. Crear un entorno virtual:
+## Ejecución Rápida (Todas las Plataformas)
+
+El método más sencillo para ejecutar la aplicación es usar el script unificado `entry.py`:
+
 ```
-python -m venv registry
-```
-
-3. Activar el entorno virtual:
-- Windows:
-```
-registry\Scripts\activate
-```
-- Linux/Mac:
-```
-source registry/bin/activate
+python entry.py
 ```
 
-4. Instalar dependencias:
-```
-pip install -r requirements.txt
-```
+Este script detectará automáticamente su sistema operativo, realizará la configuración necesaria y ejecutará la aplicación.
 
-## Ejecución
+### Opciones de Ejecución
 
-Para iniciar la aplicación, ejecute:
 ```
-python main.py
+python entry.py setup    # Solo configura el entorno
+python entry.py run      # Solo ejecuta la aplicación (requiere configuración previa)
 ```
 
-O utilice el archivo batch incluido (en Windows):
+## Ejecución Manual
+
+### Windows
+
+1. **Configuración inicial (primera vez):**
+   ```
+   setup_env.bat
+   ```
+
+2. **Ejecución normal:**
+   ```
+   run.bat
+   ```
+
+### Linux/macOS
+
+1. **Primera vez (permiso de ejecución):**
+   ```
+   chmod +x setup_env.sh
+   chmod +x run.sh
+   ```
+
+2. **Configuración inicial:**
+   ```
+   ./setup_env.sh
+   ```
+
+3. **Ejecución normal:**
+   ```
+   ./run.sh
+   ```
+
+#### Para sistemas Linux sin el módulo venv
+
+Si recibe el error "Módulo venv no disponible" y no tiene permisos de administrador, use el método de configuración manual:
+
+1. **Dar permisos de ejecución:**
+   ```
+   chmod +x setup_manual_venv.sh
+   ```
+
+2. **Ejecutar la configuración manual:**
+   ```
+   ./setup_manual_venv.sh
+   ```
+
+Este método utiliza `virtualenv` en lugar de `venv` y no requiere permisos de administrador.
+
+## Estructura de Directorios
+
 ```
-run.bat
+.
+├── assets/          # Recursos gráficos (logos, iconos)
+├── backup/          # Copias de seguridad automáticas
+├── data/            # Archivos de datos
+├── logs/            # Registros y reportes de errores
+├── registry/        # Entorno virtual (Windows)
+├── venv/            # Entorno virtual (Linux/macOS)
+├── main.py          # Punto de entrada principal
+├── error_handler.py # Sistema de manejo de errores
+├── tab*_*.py        # Módulos de la interfaz
+└── config.py        # Configuración de la aplicación
 ```
 
-## Funcionalidades
+## Sistema de Manejo de Errores
 
-La aplicación consta de seis pestañas principales:
+La aplicación incluye un robusto sistema de manejo de errores que proporciona:
 
-1. **Datos del Vuelo**: Registro de información administrativa del vuelo, incluyendo:
-   - Fecha y número de vuelo
-   - Operadores de cámara y RD
-   - Personal técnico y médico
-   - Tipo de curso y perfil de cámara
+1. **Mecanismos de Recuperación Automática**: La aplicación intenta solucionar problemas comunes sin intervención del usuario.
 
-2. **Datos de Alumnos**: Tabla para registrar información de:
-   - 8 alumnos 
-   - 2 operadores internos
-   - Campos incluyen: puesto, grado, nombre, edad, sexo, unidad, correo y número de equipo
+2. **Fallbacks para Dependencias**: Si una dependencia no está disponible, el sistema intenta alternativas compatibles.
 
-3. **Informe de Tiempos de Vuelo**:
-   - Registro de tiempos de inicio/fin de vuelo
-   - Tiempos de hipoxia y visión nocturna
-   - Registro de tiempos de recuperación por alumno
-   - Cálculo automático de tiempos totales y promedios
+3. **Adaptación al Entorno**: El sistema se adapta automáticamente a Windows, Linux o macOS.
 
-4. **Perfil RD**: Gestión de información para vuelos de descompresión rápida:
-   - Asignación de operadores internos a puestos específicos
-   - Descripción del perfil RD
-   - Registro de observaciones detalladas
+4. **Registro Detallado**: Todos los eventos importantes se registran en archivos de logs para diagnóstico.
 
-5. **Reactores**: Seguimiento de reacciones médicas durante los vuelos:
-   - Registro de eventos médicos con códigos CIE-10
-   - Selección de severidad, tipo de perfil y manejo
-   - Tabla con funcionalidad de eliminación para gestionar registros
+## Resolución de Problemas
 
-6. **Síntomas**: Gestión simplificada de síntomas por alumno:
-   - Registro de hasta 3 síntomas por alumno
-   - Interfaz optimizada para visualización rápida
-   - Función de edición y limpieza de datos
+### Problemas de Instalación
 
-## Crear Ejecutable
+- **Windows**: Si encuentra errores durante la instalación, ejecute `setup_env.bat` con derechos de administrador.
 
-Para crear un ejecutable de Windows, con el entorno activado:
-```
-pip install cx_Freeze
-python setup.py build
-```
+- **Linux/macOS**: Si encuentra problemas de permisos, asegúrese de que los scripts sean ejecutables:
+  ```
+  chmod +x setup_env.sh run.sh
+  ```
 
-El ejecutable se creará en la carpeta `build`.
+- **Error de tkinter**: Si aparece un error sobre tkinter, instálelo según su sistema:
+  - Ubuntu/Debian: `sudo apt-get install python3-tk`
+  - Fedora: `sudo dnf install python3-tkinter`
+  - Arch: `sudo pacman -S tk`
+  - macOS: Reinstale Python desde python.org con soporte para tkinter
 
-## Estructura de Datos
+### Problemas durante la Ejecución
 
-La aplicación guarda los datos en los siguientes formatos:
-- JSON: `data/vuelos.json`
-- CSV: `data/vuelos.csv`
-- Excel: `data/vuelos.xlsx`
+1. **Cierres inesperados**: Verifique los archivos de log en la carpeta `logs/`
 
-Además, se crean copias de seguridad automáticas en la carpeta `backup` y un registro de actividad en la carpeta `logs`.
+2. **Errores de dependencias**: Ejecute el script de configuración nuevamente para reinstalar las dependencias.
 
-## Personalización
+3. **Errores de permisos de directorio**: Asegúrese de que la aplicación tenga permisos de escritura en los directorios `data/`, `logs/` y `backup/`.
 
-### Configuración de Logo
+## Desarrollo y Adaptación
 
-Para personalizar el logo de la aplicación, coloque una imagen JPEG llamada `logo.jpg` en la carpeta `assets/`. Por defecto, se creará un logo genérico al iniciar la aplicación por primera vez.
+Para desarrolladores que deseen extender o modificar la aplicación:
 
-### Opciones por Defecto
+1. Todos los módulos están organizados por función (pestaña)
+2. Las extensiones deben seguir el mismo patrón de manejo de errores
+3. El archivo `error_handler.py` contiene utilidades para el manejo robusto de errores
 
-Las opciones predeterminadas como perfiles de cámara y rangos militares pueden modificarse en los archivos de configuración.
+## Licencia
 
-## Autosave
+Todos los derechos reservados - Fuerza Aérea Colombiana.
 
-La aplicación cuenta con una función de autoguardado que ejecuta cada 10 segundos para prevenir pérdida de datos.
+---
 
-## Actualizaciones Recientes
-
-### Versión 3.2 (Abril 2024)
-- **UI mejorada**: Interfaz más limpia y directa para el registro de síntomas
-- **Ventanas de diálogo optimizadas**: Visualización mejorada de la selección de síntomas con ventanas más grandes
-- **Simplificación de la interfaz**: Eliminación de elementos visuales innecesarios como viñetas y detalles redundantes
-- **Mejora en la usabilidad**: Enfoque en mostrar solo la información esencial de los síntomas
-
-## Desarrollado por
-
-Desarrollado para las Fuerzas Militares de Colombia - Fuerza Aeroespacial Colombiana, Dirección de Medicina Aeroespacial, Subdirección Científica Aeroespacial. 
+© 2024 Fuerza Aérea Colombiana
