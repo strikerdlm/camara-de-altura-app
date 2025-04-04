@@ -1,6 +1,6 @@
-# Cámara Hiperbárica - Sistema de Registro
+# Cámara Hipobárica - Sistema de Registro
 
-Sistema integrado para el registro de entrenamiento en cámara hiperbárica desarrollado para la Fuerza Aérea Colombiana.
+Sistema integrado para el registro de entrenamiento en cámara hipobárica desarrollado para la Fuerza Aérea Colombiana.
 
 ## Descripción
 
