@@ -3,9 +3,11 @@
 
 import tkinter as tk
 import ttkbootstrap as ttkb
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from typing import Dict, Any, List
 from ttkbootstrap.scrolled import ScrolledFrame
+import pandas as pd
+import os
 
 class AlumnosTab(ttkb.Frame):
     """Tab for student and OI data, aligned with camara.mdc rules."""
@@ -92,6 +94,15 @@ class AlumnosTab(ttkb.Frame):
             width=25
         )
         clear_btn.pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        import_btn = ttkb.Button(
+            button_frame,
+            text="Importar Alumnos desde Excel",
+            command=self.import_from_excel,
+            bootstyle="info",
+            width=25
+        )
+        import_btn.pack(side=tk.RIGHT, padx=5, pady=5)
 
     def _create_participant_table(self, parent_frame, participant_ids: List[str], is_oi_section: bool):
         """Creates the header and rows for a list of participants (students or OIs)."""
@@ -220,5 +231,313 @@ class AlumnosTab(ttkb.Frame):
         
         print("Formulario Alumnos/OI limpiado.")
         # self.show_toast("Formulario limpiado") # Optional Toast
+    
+    def import_from_excel(self):
+        """Open file dialog to import student data from Excel."""
+        # Open file dialog to select Excel file
+        file_path = filedialog.askopenfilename(
+            title="Seleccionar archivo Excel",
+            filetypes=[("Excel files", "*.xlsx"), ("All files", "*.*")],
+            parent=self
+        )
+        
+        if not file_path:
+            return  # User cancelled
+        
+        try:
+            # Load Excel file with pandas
+            students_data = self.load_students_from_excel(file_path)
+            if not students_data:
+                messagebox.showinfo("Importación", "No se encontraron datos de estudiantes en el archivo.", parent=self)
+                return
+            
+            # Show selection dialog
+            self.show_student_selection_dialog(students_data)
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al importar desde Excel: {str(e)}", parent=self)
+
+    def load_students_from_excel(self, file_path):
+        """Load student data from Excel file using pandas."""
+        try:
+            # Read Excel file
+            df = pd.read_excel(file_path)
+            
+            # Map Excel columns to app field names based on the actual structure
+            # of 'EVALUACIÓN MEDICA PRE VUELO DE LA CAMARA DE ALTURA.xlsx'
+            field_mapping = {
+                # Remove GRADO mapping as we'll handle it separately
+                "APELLIDOS Y NOMBRES": "apellido_nombre",
+                "EDAD": "edad", 
+                "UNIDAD OPERATIVA": "unidad",
+                "CORREO INSTITUCIONAL": "email",
+                "CELULAR": "telefono"  # Extra field that might be useful
+            }
+            
+            # Convert DataFrame to list of dictionaries
+            students = []
+            for _, row in df.iterrows():
+                student = {}
+                
+                # Special handling for GRADO - check OFICIAL or SUBOFICIAL columns
+                grado = None
+                if "OFICIAL" in df.columns and not pd.isna(row["OFICIAL"]) and str(row["OFICIAL"]).strip():
+                    grado = str(row["OFICIAL"]).strip()
+                elif "SUBOFICIAL" in df.columns and not pd.isna(row["SUBOFICIAL"]) and str(row["SUBOFICIAL"]).strip():
+                    grado = str(row["SUBOFICIAL"]).strip()
+                
+                # Set grado value
+                if grado:
+                    student["grado"] = grado
+                else:
+                    student["grado"] = ""
+                
+                # Process other fields
+                for excel_col, app_field in field_mapping.items():
+                    if excel_col in df.columns:
+                        value = row[excel_col]
+                        # Handle NaN values
+                        if pd.isna(value):
+                            value = ""
+                        elif app_field == "edad":
+                            value = str(int(value)) if pd.notna(value) else ""
+                        else:
+                            value = str(value).strip()
+                        
+                        # Map to our app fields
+                        if app_field in self.var_keys:
+                            student[app_field] = value
+                        elif app_field == "telefono":
+                            # Store phone number but don't map directly
+                            # (useful for emergency contact)
+                            pass
+                
+                # Initialize empty values for fields not in the Excel
+                for key in self.var_keys:
+                    if key not in student:
+                        student[key] = ""
+                
+                # Default gender to '-' if not specified
+                if "genero" in student and not student["genero"]:
+                    student["genero"] = "-"
+                
+                # Only add if there's at least a name
+                if student.get("apellido_nombre", "").strip():
+                    students.append(student)
+            
+            return students
+        except Exception as e:
+            print(f"Error loading Excel: {e}")
+            raise
+
+    def show_student_selection_dialog(self, students_data):
+        """Show dialog to let user select which students to import."""
+        # Create a dialog window
+        dialog = ttkb.Toplevel(self)
+        dialog.title("Seleccionar Estudiantes para Importar")
+        dialog.geometry("700x500")  # Larger size for better readability
+        dialog.transient(self)
+        dialog.grab_set()  # Modal dialog
+        
+        # Instructions label
+        instructions = ttkb.Label(
+            dialog,
+            text="Seleccione los estudiantes que desea importar:",
+            font=('Segoe UI', 11),
+            bootstyle="info",
+            padding=10
+        )
+        instructions.pack(fill=tk.X)
+        
+        # Use a simple Canvas with Scrollbar instead of ScrolledFrame
+        # Create a frame to contain the canvas and scrollbar
+        frame = ttkb.Frame(dialog)
+        frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        
+        # Create canvas
+        canvas = tk.Canvas(frame)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Add a scrollbar to the canvas
+        scrollbar = ttkb.Scrollbar(frame, orient=tk.VERTICAL, command=canvas.yview)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Configure the canvas
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Create a frame inside the canvas to hold the content
+        container = ttkb.Frame(canvas)
+        
+        # Add the container frame to a window in the canvas
+        canvas_window = canvas.create_window((0, 0), window=container, anchor="nw")
+        
+        # Make sure the frame takes the full width of the canvas
+        def configure_canvas_window(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        
+        canvas.bind('<Configure>', configure_canvas_window)
+        
+        # Update scrollregion when the container size changes
+        def configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        container.bind('<Configure>', configure_scroll_region)
+        
+        # Bind mousewheel event for scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        # Ensure proper cleanup when dialog is closed
+        def on_dialog_close():
+            canvas.unbind_all("<MouseWheel>")
+            dialog.destroy()
+        
+        dialog.protocol("WM_DELETE_WINDOW", on_dialog_close)
+        
+        # Table header
+        header_frame = ttkb.Frame(container)
+        header_frame.pack(fill=tk.X, pady=5)
+        
+        # Headers
+        ttkb.Label(header_frame, text="Seleccionar", width=10, font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        ttkb.Label(header_frame, text="Grado", width=10, font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        ttkb.Label(header_frame, text="Nombre", width=30, font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        ttkb.Label(header_frame, text="Unidad", width=15, font=('Segoe UI', 10, 'bold')).pack(side=tk.LEFT, padx=5)
+        
+        # Separator
+        ttkb.Separator(container, orient="horizontal").pack(fill=tk.X, pady=5)
+        
+        # Create a frame to hold all student entries for better scrolling
+        students_container = ttkb.Frame(container)
+        students_container.pack(fill=tk.BOTH, expand=True)
+        
+        # Add checkboxes for each student
+        checkboxes = {}
+        for i, student in enumerate(students_data):
+            var = tk.BooleanVar(value=False)  # Default unselected
+            checkboxes[i] = var
+            
+            # Create frame for each student with checkbox and info
+            student_frame = ttkb.Frame(students_container)
+            student_frame.pack(fill=tk.X, pady=2)
+            
+            # Checkbox
+            checkbox = ttkb.Checkbutton(
+                student_frame, 
+                variable=var,
+                bootstyle="primary-round-toggle"
+            )
+            checkbox.pack(side=tk.LEFT, padx=(5, 10), pady=2)
+            
+            # Student info - in columns
+            grado = student.get("grado", "")
+            name = student.get("apellido_nombre", "")
+            unidad = student.get("unidad", "")
+            
+            grado_label = ttkb.Label(student_frame, text=grado, width=10)
+            grado_label.pack(side=tk.LEFT, padx=5)
+            
+            name_label = ttkb.Label(student_frame, text=name, width=30, anchor="w")
+            name_label.pack(side=tk.LEFT, padx=5)
+            
+            unidad_label = ttkb.Label(student_frame, text=unidad, width=15)
+            unidad_label.pack(side=tk.LEFT, padx=5)
+        
+        # Add Select All / Deselect All buttons
+        button_frame = ttkb.Frame(dialog)
+        button_frame.pack(fill=tk.X, padx=10, pady=(0, 10))
+        
+        def select_all():
+            for var in checkboxes.values():
+                var.set(True)
+        
+        def deselect_all():
+            for var in checkboxes.values():
+                var.set(False)
+        
+        select_all_btn = ttkb.Button(
+            button_frame,
+            text="Seleccionar Todos",
+            command=select_all,
+            bootstyle="info-outline",
+            width=15
+        )
+        select_all_btn.pack(side=tk.LEFT, padx=5)
+        
+        deselect_all_btn = ttkb.Button(
+            button_frame,
+            text="Deseleccionar Todos",
+            command=deselect_all,
+            bootstyle="warning-outline",
+            width=15
+        )
+        deselect_all_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Action buttons
+        action_frame = ttkb.Frame(dialog)
+        action_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        def import_selected():
+            selected_students = [students_data[i] for i, var in checkboxes.items() if var.get()]
+            if selected_students:
+                self.apply_selected_students(selected_students)
+                canvas.unbind_all("<MouseWheel>")  # Clean up binding
+                dialog.destroy()
+                messagebox.showinfo("Importación Exitosa", 
+                                  f"Se importaron {len(selected_students)} estudiantes.", 
+                                  parent=self)
+            else:
+                messagebox.showinfo("Importación", 
+                                  "No se seleccionaron estudiantes para importar.", 
+                                  parent=dialog)
+        
+        import_btn = ttkb.Button(
+            action_frame,
+            text="Importar Seleccionados",
+            command=import_selected,
+            bootstyle="success",
+            width=20
+        )
+        import_btn.pack(side=tk.RIGHT, padx=5)
+        
+        cancel_btn = ttkb.Button(
+            action_frame,
+            text="Cancelar",
+            command=on_dialog_close,  # Use the cleanup function
+            bootstyle="danger-outline",
+            width=10
+        )
+        cancel_btn.pack(side=tk.RIGHT, padx=5)
+
+    def apply_selected_students(self, selected_students):
+        """Apply selected student data to the form."""
+        # Get available student slots (those without names)
+        available_slots = []
+        for slot_id in [str(i) for i in range(1, self.max_students + 1)]:
+            if not self.participant_vars[slot_id]["apellido_nombre"].get().strip():
+                available_slots.append(slot_id)
+        
+        # Import students into available slots
+        imported_count = 0
+        for student in selected_students:
+            if imported_count >= len(available_slots):
+                # No more slots available
+                messagebox.showwarning(
+                    "Límite alcanzado",
+                    f"Solo se importaron {imported_count} de {len(selected_students)} estudiantes porque no hay más espacios disponibles.",
+                    parent=self
+                )
+                break
+            
+            slot_id = available_slots[imported_count]
+            for field, value in student.items():
+                if field in self.participant_vars[slot_id]:
+                    self.participant_vars[slot_id][field].set(value)
+            
+            imported_count += 1
+        
+        # Save data after import
+        self.save_data()
     
     # --- Removed show_toast method if not needed or handled globally --- 

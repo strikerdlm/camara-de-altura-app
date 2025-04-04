@@ -237,13 +237,6 @@ def import_tab_modules():
     except ImportError as e:
         logger.error(f"Failed to import ReactoresTab: {e}")
     
-    try:
-        from tab6_sintomas import SintomasTab
-        modules['SintomasTab'] = SintomasTab
-        logger.info("Imported SintomasTab successfully")
-    except ImportError as e:
-        logger.error(f"Failed to import SintomasTab: {e}")
-    
     return modules
 
 # Import tab modules
@@ -516,16 +509,6 @@ class MainApp:
             self.tab5 = self.create_fallback_tab("Reactores", "Este módulo no está disponible")
             self.notebook.add(self.tab5, text="Reactores")
             logger.warning("Using fallback for ReactoresTab")
-        
-        # Tab 6: Síntomas (Symptoms)
-        if 'SintomasTab' in tab_modules:
-            self.tab6 = tab_modules['SintomasTab'](self.notebook, self.data_manager)
-            self.notebook.add(self.tab6, text="Síntomas")
-            logger.info("Added SintomasTab")
-        else:
-            self.tab6 = self.create_fallback_tab("Síntomas", "Este módulo no está disponible")
-            self.notebook.add(self.tab6, text="Síntomas")
-            logger.warning("Using fallback for SintomasTab")
     
     def create_fallback_tab(self, name, message):
         """Create a fallback tab when a module is missing"""

@@ -63,7 +63,7 @@ class RDTab(ttkb.Frame):
         # Title
         title_label = ttkb.Label(
             self, 
-            text="PERFIL RD (DESCOMPRESIÓN RÁPIDA)", 
+            text="PERFIL DE DESCOMPRESIÓN RÁPIDA", 
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )

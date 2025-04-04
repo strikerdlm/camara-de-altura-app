@@ -6,6 +6,9 @@ import ttkbootstrap as ttkb
 from datetime import datetime
 import locale
 from typing import Dict, Any
+import json
+import os
+from tkinter import messagebox
 
 class VueloTab(ttkb.Frame):
     """Tab for flight data, aligned with camara.mdc rules."""
@@ -17,6 +20,10 @@ class VueloTab(ttkb.Frame):
         
         # Data variables
         self.variables: Dict[str, tk.StringVar] = {}
+        
+        # Training archives data
+        self.training_archives = {}
+        self.load_training_archives()
         
         # Create the layout
         self.create_widgets()
@@ -33,7 +40,7 @@ class VueloTab(ttkb.Frame):
         # Header
         header = ttkb.Label(
             self,
-            text="Datos del Vuelo",
+            text="Información del Entrenamiento",
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )
@@ -53,12 +60,12 @@ class VueloTab(ttkb.Frame):
         date_btn.grid(row=current_row, column=2, padx=(0, 5), pady=5, sticky="w")
         
         # Vuelo del Año 
-        self._create_field(current_row, 2, "Vuelo del Año:", "vuelo_del_ano", label_col_offset=1)
+        self._create_field(current_row, 2, "Entrenamiento del Año:", "vuelo_del_ano", label_col_offset=1)
         current_row += 1
 
         # -- Row 2 --
         # Vuelo Total
-        self._create_field(current_row, 0, "Vuelo Total:", "vuelo_total")
+        self._create_field(current_row, 0, "Entrenamientos Totales:", "vuelo_total")
         # Curso
         self._create_field(current_row, 2, "Curso:", "curso", label_col_offset=1,
                            widget_type="combobox", 
@@ -103,8 +110,21 @@ class VueloTab(ttkb.Frame):
         self._create_field(current_row, 2, "OE-5:", "oe_5", label_col_offset=1)
         current_row += 1
 
-        # --- Removed old fields/layout --- 
-        # --- Removed Observaciones Text Area --- 
+        # Add a separator for visual clarity before the archive section
+        separator = ttkb.Separator(self, orient="horizontal")
+        separator.grid(row=current_row, column=0, columnspan=4, sticky="ew", pady=10)
+        current_row += 1
+
+        # Add Training Archive section
+        archive_frame = ttkb.LabelFrame(
+            self,
+            text="Archivo de Entrenamientos",
+            padding=10,
+            bootstyle="info"
+        )
+        archive_frame.grid(row=current_row, column=0, columnspan=4, sticky="ew", pady=5)
+        self.create_archive_widgets(archive_frame)
+        current_row += 1
 
         # Add padding below fields before buttons
         self.rowconfigure(current_row, weight=1) # Add spacer row
@@ -124,6 +144,15 @@ class VueloTab(ttkb.Frame):
         )
         save_btn.pack(side=tk.RIGHT, padx=5, pady=5)
         
+        save_as_new_btn = ttkb.Button(
+            button_frame,
+            text="Guardar Como Nuevo",
+            command=self.save_as_new_training,
+            bootstyle="primary",
+            width=20
+        )
+        save_as_new_btn.pack(side=tk.RIGHT, padx=5, pady=5)
+        
         clear_btn = ttkb.Button(
             button_frame,
             text="Limpiar Campos",
@@ -132,6 +161,99 @@ class VueloTab(ttkb.Frame):
             width=15
         )
         clear_btn.pack(side=tk.RIGHT, padx=5, pady=5)
+        
+    def create_archive_widgets(self, parent):
+        """Create widgets for browsing and loading past trainings."""
+        parent.columnconfigure(0, weight=1)
+        parent.columnconfigure(1, weight=1)
+        
+        # Row 0: Search options
+        search_frame = ttkb.Frame(parent)
+        search_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=5)
+        
+        # By Date
+        date_label = ttkb.Label(search_frame, text="Buscar por Fecha:")
+        date_label.pack(side=tk.LEFT, padx=5)
+        
+        self.date_search_var = tk.StringVar()
+        date_entry = ttkb.Entry(search_frame, textvariable=self.date_search_var, width=12)
+        date_entry.pack(side=tk.LEFT, padx=5)
+        
+        date_search_btn = ttkb.Button(
+            search_frame,
+            text="Buscar",
+            command=self.search_by_date,
+            bootstyle="info-outline",
+            width=8
+        )
+        date_search_btn.pack(side=tk.LEFT, padx=5)
+        
+        # By Training Number
+        training_label = ttkb.Label(search_frame, text="Buscar por Entrenamiento Nº:")
+        training_label.pack(side=tk.LEFT, padx=(20, 5))
+        
+        self.training_search_var = tk.StringVar()
+        training_entry = ttkb.Entry(search_frame, textvariable=self.training_search_var, width=5)
+        training_entry.pack(side=tk.LEFT, padx=5)
+        
+        training_search_btn = ttkb.Button(
+            search_frame,
+            text="Buscar",
+            command=self.search_by_training,
+            bootstyle="info-outline",
+            width=8
+        )
+        training_search_btn.pack(side=tk.LEFT, padx=5)
+        
+        # Row 1: Training List
+        list_frame = ttkb.Frame(parent)
+        list_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=5)
+        
+        list_label = ttkb.Label(list_frame, text="Entrenamientos Guardados:", font=('Segoe UI', 10, 'bold'))
+        list_label.pack(anchor="w", padx=5, pady=(5, 0))
+        
+        # Create a frame with scrollbar for the training list
+        training_list_frame = ttkb.Frame(parent)
+        training_list_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=5)
+        training_list_frame.columnconfigure(0, weight=1)
+        training_list_frame.rowconfigure(0, weight=1)
+        
+        # Create a canvas with scrollbar
+        canvas = tk.Canvas(training_list_frame, height=150)
+        scrollbar = ttkb.Scrollbar(training_list_frame, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        
+        # Create a frame inside the canvas to hold the training entries
+        self.trainings_container = ttkb.Frame(canvas)
+        canvas_window = canvas.create_window((0, 0), window=self.trainings_container, anchor="nw")
+        
+        # Make the training container frame expand to the width of the canvas
+        def on_canvas_configure(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+        
+        canvas.bind("<Configure>", on_canvas_configure)
+        
+        # Update the scroll region when the size of the trainings_container changes
+        def on_frame_configure(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        self.trainings_container.bind("<Configure>", on_frame_configure)
+        
+        # Row 3: Action buttons
+        action_frame = ttkb.Frame(parent)
+        action_frame.grid(row=3, column=0, columnspan=2, sticky="e", pady=5)
+        
+        refresh_btn = ttkb.Button(
+            action_frame,
+            text="Actualizar Lista",
+            command=self.refresh_training_list,
+            bootstyle="secondary",
+            width=15
+        )
+        refresh_btn.pack(side=tk.RIGHT, padx=5)
         
     def _create_field(self, row, label_column, label_text, var_name, 
                    widget_type="entry", values=None, width=25, label_col_offset=0):
@@ -216,11 +338,74 @@ class VueloTab(ttkb.Frame):
         # Assume data_manager.save_data() saves the entire current_data structure
         try:
             self.data_manager.save_data()
+            
+            # Also save to the archives
+            self.save_to_training_archive(vuelo_data)
+            
             print("Datos del vuelo guardados.")
-            # self.show_toast("Datos del vuelo guardados") # Optional: re-enable toast if desired
+            messagebox.showinfo("Guardado Exitoso", "Datos del entrenamiento guardados correctamente.")
         except Exception as e:
              print(f"Error saving flight data: {e}")
-             # self.show_toast("Error al guardar datos") # Optional: error toast
+             messagebox.showerror("Error", f"Error al guardar datos: {e}")
+    
+    def save_as_new_training(self):
+        """Save the current data as a new training entry."""
+        # Increment the training numbers
+        training_year = self.get_next_training_year()
+        total_trainings = self.get_next_total_trainings()
+        
+        # Update the UI
+        self.variables['vuelo_del_ano'].set(str(training_year))
+        self.variables['vuelo_total'].set(str(total_trainings))
+        
+        # Save with new numbers
+        self.save_data()
+        
+    def get_next_training_year(self):
+        """Get the next training number for the current year."""
+        current_year = datetime.now().year
+        max_num = 0
+        
+        for training_id, training in self.training_archives.items():
+            try:
+                # Extract year from the date
+                training_date = training.get('fecha', '')
+                # Try different date formats to get the year
+                try:
+                    # Try DD/MM/YYYY format
+                    training_year = datetime.strptime(training_date, "%d/%m/%Y").year
+                except ValueError:
+                    try:
+                        # Try YYYY-MM-DD format
+                        training_year = datetime.strptime(training_date, "%Y-%m-%d").year
+                    except ValueError:
+                        # Skip if date format is invalid
+                        continue
+                
+                # If it's for the current year, check its number
+                if training_year == current_year:
+                    try:
+                        training_num = int(training.get('vuelo_del_ano', '0'))
+                        max_num = max(max_num, training_num)
+                    except ValueError:
+                        continue
+            except:
+                continue
+                
+        return max_num + 1
+    
+    def get_next_total_trainings(self):
+        """Get the next total training number."""
+        max_num = 0
+        
+        for training_id, training in self.training_archives.items():
+            try:
+                training_num = int(training.get('vuelo_total', '0'))
+                max_num = max(max_num, training_num)
+            except ValueError:
+                continue
+                
+        return max_num + 1
     
     def clear_form(self):
         """Clear all fields managed by self.variables."""
@@ -238,9 +423,285 @@ class VueloTab(ttkb.Frame):
         self.set_current_date() # Set date to today on clear
         
         print("Formulario de Vuelo limpiado.")
-        # self.show_toast("Formulario limpiado") # Optional: re-enable toast
+        
+    def load_training_archives(self):
+        """Load saved training archives from JSON file."""
+        try:
+            # Check if archives directory exists, create if not
+            archives_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'archives')
+            os.makedirs(archives_dir, exist_ok=True)
+            
+            # Path to the training archives file
+            archives_file = os.path.join(archives_dir, 'training_archives.json')
+            
+            # If file exists, load data
+            if os.path.exists(archives_file):
+                with open(archives_file, 'r', encoding='utf-8') as f:
+                    self.training_archives = json.load(f)
+            else:
+                self.training_archives = {}
+                
+            # Refresh the UI if it's been created
+            if hasattr(self, 'trainings_container'):
+                self.refresh_training_list()
+                
+        except Exception as e:
+            print(f"Error loading training archives: {e}")
+            self.training_archives = {}
     
-    # --- Removed show_toast method if not needed or handled globally ---
+    def save_to_training_archive(self, training_data):
+        """Save the current training data to the archives."""
+        try:
+            # Get date and training number to generate a unique ID
+            date = training_data.get('fecha', datetime.now().strftime("%d/%m/%Y"))
+            training_year = training_data.get('vuelo_del_ano', '0')
+            
+            # Create a unique ID for this training
+            training_id = f"{date}_{training_year}"
+            
+            # Add timestamp for sorting
+            training_data['timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Save to archives dictionary
+            self.training_archives[training_id] = training_data
+            
+            # Save archives to JSON file
+            self.save_training_archives()
+            
+            # Refresh the training list
+            self.refresh_training_list()
+            
+        except Exception as e:
+            print(f"Error saving to training archive: {e}")
+    
+    def save_training_archives(self):
+        """Save the training archives to JSON file."""
+        try:
+            # Check if archives directory exists, create if not
+            archives_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'archives')
+            os.makedirs(archives_dir, exist_ok=True)
+            
+            # Path to the training archives file
+            archives_file = os.path.join(archives_dir, 'training_archives.json')
+            
+            # Save data to JSON file
+            with open(archives_file, 'w', encoding='utf-8') as f:
+                json.dump(self.training_archives, f, ensure_ascii=False, indent=4)
+                
+        except Exception as e:
+            print(f"Error saving training archives: {e}")
+    
+    def refresh_training_list(self):
+        """Refresh the training list in the UI."""
+        # Clear all existing entries in the container
+        for widget in self.trainings_container.winfo_children():
+            widget.destroy()
+        
+        # If no archives, show message
+        if not self.training_archives:
+            empty_label = ttkb.Label(
+                self.trainings_container,
+                text="No hay entrenamientos guardados",
+                font=('Segoe UI', 10, 'italic'),
+                foreground="gray"
+            )
+            empty_label.pack(pady=10)
+            return
+            
+        # Sort trainings by timestamp (newest first)
+        sorted_trainings = []
+        for training_id, training_data in self.training_archives.items():
+            sorted_trainings.append((training_id, training_data))
+            
+        # Sort by timestamp or date if available
+        sorted_trainings.sort(
+            key=lambda x: x[1].get('timestamp', x[1].get('fecha', '')), 
+            reverse=True
+        )
+        
+        # Add each training to the list
+        for training_id, training_data in sorted_trainings:
+            training_frame = ttkb.Frame(self.trainings_container)
+            training_frame.pack(fill="x", padx=5, pady=2)
+            
+            # Format the display text
+            date = training_data.get('fecha', 'Sin fecha')
+            training_num = training_data.get('vuelo_del_ano', '?')
+            total_num = training_data.get('vuelo_total', '?')
+            
+            display_text = f"Fecha: {date} | Entrenamiento: #{training_num} | Total: #{total_num}"
+            
+            # Add operador_camara if available
+            if 'operador_camara' in training_data and training_data['operador_camara']:
+                display_text += f" | Op. Cámara: {training_data['operador_camara']}"
+            
+            training_label = ttkb.Label(
+                training_frame,
+                text=display_text,
+                font=('Segoe UI', 9)
+            )
+            training_label.pack(side=tk.LEFT, fill="x", expand=True, anchor="w")
+            
+            # Add load button
+            load_btn = ttkb.Button(
+                training_frame,
+                text="Cargar",
+                command=lambda t_id=training_id: self.load_training(t_id),
+                bootstyle="info-outline",
+                width=8
+            )
+            load_btn.pack(side=tk.RIGHT, padx=5)
+    
+    def load_training(self, training_id):
+        """Load a specific training from the archives into the form."""
+        # Check if training exists
+        if training_id not in self.training_archives:
+            messagebox.showerror("Error", f"No se encontró el entrenamiento con ID {training_id}")
+            return
+            
+        # Get the training data
+        training_data = self.training_archives[training_id]
+        
+        # Confirm loading
+        confirm = messagebox.askyesno(
+            "Cargar Entrenamiento",
+            "¿Está seguro que desea cargar este entrenamiento? Se perderán los datos no guardados.",
+            icon="question"
+        )
+        
+        if not confirm:
+            return
+            
+        # Update form fields
+        for field_name, var in self.variables.items():
+            if field_name in training_data:
+                var.set(training_data[field_name])
+        
+        # Update current data in data_manager
+        self.data_manager.current_data['datos_vuelo'] = training_data.copy()
+        
+        # Save to current file
+        try:
+            self.data_manager.save_data()
+            messagebox.showinfo("Carga Exitosa", "Entrenamiento cargado correctamente.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al guardar los datos cargados: {e}")
+    
+    def search_by_date(self):
+        """Search for trainings by date."""
+        search_date = self.date_search_var.get().strip()
+        if not search_date:
+            messagebox.showinfo("Búsqueda", "Por favor ingrese una fecha para buscar.")
+            return
+            
+        # Clear all existing entries in the container
+        for widget in self.trainings_container.winfo_children():
+            widget.destroy()
+            
+        # Filter trainings by date
+        found = False
+        for training_id, training_data in self.training_archives.items():
+            date = training_data.get('fecha', '')
+            if search_date in date:
+                found = True
+                
+                # Create frame for this training
+                training_frame = ttkb.Frame(self.trainings_container)
+                training_frame.pack(fill="x", padx=5, pady=2)
+                
+                # Format the display text
+                training_num = training_data.get('vuelo_del_ano', '?')
+                total_num = training_data.get('vuelo_total', '?')
+                
+                display_text = f"Fecha: {date} | Entrenamiento: #{training_num} | Total: #{total_num}"
+                
+                # Add operador_camara if available
+                if 'operador_camara' in training_data and training_data['operador_camara']:
+                    display_text += f" | Op. Cámara: {training_data['operador_camara']}"
+                
+                training_label = ttkb.Label(
+                    training_frame,
+                    text=display_text,
+                    font=('Segoe UI', 9)
+                )
+                training_label.pack(side=tk.LEFT, fill="x", expand=True, anchor="w")
+                
+                # Add load button
+                load_btn = ttkb.Button(
+                    training_frame,
+                    text="Cargar",
+                    command=lambda t_id=training_id: self.load_training(t_id),
+                    bootstyle="info-outline",
+                    width=8
+                )
+                load_btn.pack(side=tk.RIGHT, padx=5)
+        
+        if not found:
+            empty_label = ttkb.Label(
+                self.trainings_container,
+                text=f"No se encontraron entrenamientos con fecha '{search_date}'",
+                font=('Segoe UI', 10, 'italic'),
+                foreground="gray"
+            )
+            empty_label.pack(pady=10)
+    
+    def search_by_training(self):
+        """Search for trainings by training number."""
+        search_num = self.training_search_var.get().strip()
+        if not search_num:
+            messagebox.showinfo("Búsqueda", "Por favor ingrese un número de entrenamiento para buscar.")
+            return
+            
+        # Clear all existing entries in the container
+        for widget in self.trainings_container.winfo_children():
+            widget.destroy()
+            
+        # Filter trainings by number
+        found = False
+        for training_id, training_data in self.training_archives.items():
+            training_num = str(training_data.get('vuelo_del_ano', ''))
+            if search_num == training_num:
+                found = True
+                
+                # Create frame for this training
+                training_frame = ttkb.Frame(self.trainings_container)
+                training_frame.pack(fill="x", padx=5, pady=2)
+                
+                # Format the display text
+                date = training_data.get('fecha', 'Sin fecha')
+                total_num = training_data.get('vuelo_total', '?')
+                
+                display_text = f"Fecha: {date} | Entrenamiento: #{training_num} | Total: #{total_num}"
+                
+                # Add operador_camara if available
+                if 'operador_camara' in training_data and training_data['operador_camara']:
+                    display_text += f" | Op. Cámara: {training_data['operador_camara']}"
+                
+                training_label = ttkb.Label(
+                    training_frame,
+                    text=display_text,
+                    font=('Segoe UI', 9)
+                )
+                training_label.pack(side=tk.LEFT, fill="x", expand=True, anchor="w")
+                
+                # Add load button
+                load_btn = ttkb.Button(
+                    training_frame,
+                    text="Cargar",
+                    command=lambda t_id=training_id: self.load_training(t_id),
+                    bootstyle="info-outline",
+                    width=8
+                )
+                load_btn.pack(side=tk.RIGHT, padx=5)
+        
+        if not found:
+            empty_label = ttkb.Label(
+                self.trainings_container,
+                text=f"No se encontraron entrenamientos con número '{search_num}'",
+                font=('Segoe UI', 10, 'italic'),
+                foreground="gray"
+            )
+            empty_label.pack(pady=10)
 
 # Ensure imports are correct
 # Ensure AppConfig/DataManager are passed correctly during instantiation

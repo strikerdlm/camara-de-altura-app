@@ -48,9 +48,15 @@ class TiemposTab(ttkb.Frame):
         # Internal data storage
         self.event_times: Dict[str, Optional[str]] = {}
         
+        # Timer for auto-updating
+        self.auto_update_timer = None
+        
         self.initialize_data()
         self.create_widgets()
         self.load_data() # Load after widgets exist
+        
+        # Start auto-update timer for real-time displays
+        self.start_auto_update_timer()
         
     def initialize_data(self):
         """Initialize or load time event and symptom data."""
@@ -125,6 +131,15 @@ class TiemposTab(ttkb.Frame):
             width=15
         )
         clear_btn.pack(side=tk.RIGHT, padx=5, pady=5)
+        
+        clear_display_btn = ttkb.Button(
+            button_frame, 
+            text="Limpiar Pantalla", 
+            command=self.clear_display,
+            bootstyle='warning',
+            width=15
+        )
+        clear_display_btn.pack(side=tk.RIGHT, padx=5, pady=5)
 
     def create_event_times_section(self, parent):
         """Creates the section for recording main flight event times."""
@@ -213,6 +228,8 @@ class TiemposTab(ttkb.Frame):
     def calculate_student_hypoxia_time(self, student_id: str):
         """Calculates elapsed time since 'inicio_hipoxia' for a student."""
         start_hypoxia_time_str = self.event_times.get('inicio_hipoxia')
+        end_hypoxia_time_str = self.event_times.get('fin_hipoxia')
+        
         if not start_hypoxia_time_str:
             print("Error: 'Inicio Ejercicio de hipoxia' time not recorded.")
             # Optionally show message to user via toast or status bar
@@ -220,19 +237,32 @@ class TiemposTab(ttkb.Frame):
             
         try:
             start_time = datetime.strptime(start_hypoxia_time_str, '%H:%M:%S')
-            current_time = datetime.now()
+            
+            # If hypoxia has ended, use the end time instead of current time
+            if end_hypoxia_time_str:
+                end_time = datetime.strptime(end_hypoxia_time_str, '%H:%M:%S')
+                current_time = end_time
+            else:
+                current_time = datetime.now()
             
             # Convert start_time to datetime object with today's date for comparison
             now = datetime.now()
             start_datetime = now.replace(hour=start_time.hour, minute=start_time.minute, \
                                          second=start_time.second, microsecond=0)
             
+            # If using end_hypoxia time, convert it to today's date
+            if end_hypoxia_time_str:
+                end_datetime = now.replace(hour=current_time.hour, minute=current_time.minute, \
+                                          second=current_time.second, microsecond=0)
+            else:
+                end_datetime = now
+            
             # Handle case where start time is tomorrow relative to now (e.g., past midnight)
-            if start_datetime > now: 
+            if start_datetime > end_datetime: 
                  # This indicates start time was likely yesterday, adjust date
                  start_datetime -= timedelta(days=1)
 
-            elapsed_delta = now - start_datetime
+            elapsed_delta = end_datetime - start_datetime
             elapsed_seconds = int(elapsed_delta.total_seconds())
             
             if elapsed_seconds < 0: elapsed_seconds = 0 # Don't show negative time
@@ -398,3 +428,83 @@ class TiemposTab(ttkb.Frame):
 
         self.save_data() # Save the cleared state
         print("Formulario de Tiempos limpiado.") 
+        
+    def clear_display(self):
+        """Clear only the displayed times on screen without affecting stored data."""
+        confirm = messagebox.askyesno(
+            "Confirmar Limpieza de Pantalla",
+            "¿Está seguro que desea limpiar SOLO los tiempos mostrados en pantalla?\nLos datos almacenados no se eliminarán.",
+            icon="info",
+            parent=self
+        )
+        if not confirm: return
+        
+        # Clear UI variables for events without changing stored data
+        for key, var in self.event_time_vars.items():
+            if not key.endswith("_label"):  # Only clear time vars, not label refs
+                var.set("--:--:--")
+            label_widget = self.event_time_vars.get(f"{key}_label")
+            if label_widget:
+                label_widget.configure(bootstyle="secondary")
+                
+        # Clear student hypoxia display
+        for var in self.student_hypoxia_time_vars.values():
+            var.set("00:00:00")
+            
+        # Clear calculated totals display
+        for var in self.calculated_total_time_vars.values():
+            var.set("00:00:00")
+            
+        print("Pantalla de Tiempos limpiada. Datos almacenados intactos.")
+        
+        # Optionally show a message to the user
+        Messagebox.show_info(
+            "Pantalla limpiada con éxito. Los datos almacenados permanecen intactos.",
+            "Pantalla Limpiada",
+            parent=self
+        ) 
+
+    def start_auto_update_timer(self):
+        """Start a timer to periodically update time displays"""
+        # Update every 1 second for real-time display
+        self.auto_update_timer = self.after(1000, self.update_time_displays)
+    
+    def update_time_displays(self):
+        """Update all dynamic time displays"""
+        # Update calculated totals
+        self.update_calculated_totals()
+        
+        # Update student hypoxia times if hypoxia exercise is ongoing
+        start_hypoxia = self.event_times.get('inicio_hipoxia')
+        end_hypoxia = self.event_times.get('fin_hipoxia')
+        
+        if start_hypoxia and not end_hypoxia:
+            # Hypoxia exercise is ongoing - update all student times
+            for student_id in range(1, self.num_students + 1):
+                self.calculate_student_hypoxia_time(str(student_id))
+        
+        # Schedule next update
+        self.auto_update_timer = self.after(1000, self.update_time_displays)
+
+    def on_destroy(self, event=None):
+        """Clean up resources when tab is destroyed."""
+        # Cancel the auto-update timer if it's running
+        if self.auto_update_timer:
+            self.after_cancel(self.auto_update_timer)
+            self.auto_update_timer = None
+
+# Bind the destroy event to clean up resources
+if __name__ != "__main__":
+    def setup_destroy_handler(self):
+        """Set up the destroy event handler."""
+        self.bind("<Destroy>", self.on_destroy)
+    
+    # Add method to TiemposTab class
+    TiemposTab.setup_destroy_handler = setup_destroy_handler
+    
+    # Patch the __init__ method to call setup_destroy_handler
+    original_init = TiemposTab.__init__
+    def patched_init(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        self.setup_destroy_handler()
+    TiemposTab.__init__ = patched_init 

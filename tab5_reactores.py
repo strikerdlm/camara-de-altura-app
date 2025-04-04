@@ -211,9 +211,54 @@ class ReactoresTab(ttkb.Frame):
         self.tree.grid(row=0, column=0, sticky='nsew')
         scrollbar.grid(row=0, column=1, sticky='ns')
         
-        # TODO: Add button to remove selected reaction?
-        # remove_btn = ttkb.Button(parent, text="Eliminar Seleccionada", ... )
-        # remove_btn.grid(...) 
+        # Add button frame below the Treeview
+        button_frame = ttkb.Frame(parent)
+        button_frame.grid(row=1, column=0, columnspan=2, pady=(5, 0), sticky='e')
+        
+        # Add button to remove selected reaction
+        remove_btn = ttkb.Button(
+            button_frame, 
+            text="Eliminar Seleccionada", 
+            command=self.delete_selected_reaction,
+            bootstyle="danger-outline",
+            width=20
+        )
+        remove_btn.pack(side=tk.RIGHT, padx=5)
+
+    def delete_selected_reaction(self):
+        """Delete the selected reaction from the list."""
+        selected_item = self.tree.selection()
+        if not selected_item:
+            messagebox.showinfo("Selección Vacía", "Por favor, seleccione una reacción para eliminar.", parent=self)
+            return
+        
+        # Get the index of the selected item
+        selected_index = self.tree.index(selected_item[0])
+        
+        # Confirm deletion
+        confirm = messagebox.askyesno(
+            "Confirmar Eliminación",
+            "¿Está seguro que desea eliminar la reacción seleccionada?",
+            icon="warning",
+            parent=self
+        )
+        
+        if not confirm:
+            return
+        
+        # Remove from internal list
+        if 0 <= selected_index < len(self.reactions_list):
+            del self.reactions_list[selected_index]
+            
+            # Update display
+            self.update_reaction_list_display()
+            
+            # Save changes
+            self.save_data()
+            
+            print(f"Reacción en posición {selected_index+1} eliminada.")
+        else:
+            print(f"Error: Índice fuera de rango ({selected_index}).")
 
     def add_reaction(self):
         """Collects data from the form and adds it to the reactions list."""

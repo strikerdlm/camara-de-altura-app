@@ -43,7 +43,7 @@ class RegistroApp:
         self._timer_job = None
         
         # Configure the main window
-        self.root.title("Registro Entrenamiento en Cámara de Altura")
+        self.root.title("Registro Entrenamiento de Hipoxia y RD en Cámara Hipobárica")
         self.root.geometry("1200x800")
         self.root.minsize(1000, 700)
         
@@ -60,10 +60,11 @@ class RegistroApp:
         self.main_container = ttkb.Frame(self.root, bootstyle="light")
         self.main_container.pack(fill=tk.BOTH, expand=True)
         # --- TEMPORARY: Add background color for visual debugging ---
-        try:
-            self.main_container.configure(style='danger.TFrame') # Use a contrasting style
-        except tk.TclError:
-            print("Could not apply temporary style to main_container.")
+        # Remove the red frame styling
+        # try:
+        #     self.main_container.configure(style='danger.TFrame') # Use a contrasting style
+        # except tk.TclError:
+        #     print("Could not apply temporary style to main_container.")
         # -------------------------------------------------------------
         
         # Create Chronometer Frame (at the bottom)
@@ -72,11 +73,12 @@ class RegistroApp:
         # Create notebook (tabs) - Pack *above* the chronometer
         self.notebook = ttkb.Notebook(self.main_container)
         # --- TEMPORARY: Add background color for visual debugging ---
-        try:
-            # Notebook styling is complex, applying to the main widget might work
-            self.notebook.configure(style='info.TNotebook') # Use a different contrasting style
-        except tk.TclError:
-            print("Could not apply temporary style to notebook.")
+        # Remove the contrasting style from the notebook
+        # try:
+        #     # Notebook styling is complex, applying to the main widget might work
+        #     self.notebook.configure(style='info.TNotebook') # Use a different contrasting style
+        # except tk.TclError:
+        #     print("Could not apply temporary style to notebook.")
         # -------------------------------------------------------------
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=(10, 0)) # Pad bottom 0
         
