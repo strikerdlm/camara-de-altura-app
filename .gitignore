@@ -58,4 +58,7 @@ app_backup/a_camara.rar
 # Operating system files
 .DS_Store
 Thumbs.db
-desktop.ini 
+desktop.ini
+
+# Append untracked file name
+-la .cursor 
