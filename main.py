@@ -613,7 +613,6 @@ def launch_main_app():
 welcome_root = None
 
 if __name__ == "__main__":
-<<<<<<< HEAD
     try:
         # Create directories if they don't exist
         for dir_name in ["assets", "data", "logs", "backup"]:
@@ -660,19 +659,4 @@ if __name__ == "__main__":
         # Start main loop
         main_root.mainloop()
     except Exception as e:
-        handle_critical_exception(e) 
-=======
-    # Create the welcome screen first
-    welcome_root = ttkb.Window(themename="litera")  # Modern light theme
-    welcome_app = WelcomeScreen(welcome_root, launch_main_app)
-    
-    # Center the window on screen
-    welcome_root.update_idletasks()
-    width = welcome_root.winfo_width()
-    height = welcome_root.winfo_height()
-    x = (welcome_root.winfo_screenwidth() // 2) - (width // 2)
-    y = (welcome_root.winfo_screenheight() // 2) - (height // 2)
-    welcome_root.geometry(f'+{x}+{y}')
-    
-    welcome_root.mainloop()
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
+        handle_critical_exception(e)

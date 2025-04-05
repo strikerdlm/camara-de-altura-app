@@ -7,11 +7,8 @@ from tkinter import messagebox
 from typing import Dict, Any
 import json
 import os
-<<<<<<< HEAD
-from tkinter import messagebox
-=======
+import locale
 from datetime import datetime
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
 
 class VueloTab(ttkb.Frame):
     """Tab for managing flight data."""
@@ -57,6 +54,21 @@ class VueloTab(ttkb.Frame):
         self.variables['operador_nombre'] = tk.StringVar()
         self.variables['operador_grado'] = tk.StringVar()
         self.variables['operador_unidad'] = tk.StringVar()
+        
+        # Additional variables for advanced functionality
+        self.variables['vuelo_del_ano'] = tk.StringVar()
+        self.variables['vuelo_total'] = tk.StringVar()
+        self.variables['curso'] = tk.StringVar()
+        self.variables['operador_camara'] = tk.StringVar()
+        self.variables['operador_rd'] = tk.StringVar()
+        self.variables['lector'] = tk.StringVar()
+        self.variables['observador_registro'] = tk.StringVar()
+        self.variables['perfil_camara'] = tk.StringVar()
+        self.variables['alumnos'] = tk.StringVar()
+        self.variables['director_medico'] = tk.StringVar()
+        self.variables['oe_4'] = tk.StringVar()
+        self.variables['jefe_tecnico'] = tk.StringVar()
+        self.variables['oe_5'] = tk.StringVar()
     
     def create_widgets(self):
         """Create the tab UI widgets."""
@@ -66,11 +78,7 @@ class VueloTab(ttkb.Frame):
         # Header
         header = ttkb.Label(
             self,
-<<<<<<< HEAD
             text="Información del Entrenamiento",
-=======
-            text="Registro de Vuelo",
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )
@@ -86,7 +94,9 @@ class VueloTab(ttkb.Frame):
         flight_frame.columnconfigure(1, weight=1)
         flight_frame.columnconfigure(3, weight=1)
         
-<<<<<<< HEAD
+        # Setup row counters
+        current_row = 0
+        
         # Vuelo del Año 
         self._create_field(current_row, 2, "Entrenamiento del Año:", "vuelo_del_ano", label_col_offset=1)
         current_row += 1
@@ -158,106 +168,9 @@ class VueloTab(ttkb.Frame):
         self.rowconfigure(current_row, weight=1) # Add spacer row
         current_row += 1
 
-        # Buttons section (using pack at the bottom for simplicity)
-=======
-        # Flight data fields
-        fields = [
-            ('Fecha:', 'fecha', 0),
-            ('Hora Inicio:', 'hora_inicio', 0),
-            ('Hora Fin:', 'hora_fin', 0),
-            ('Tipo de Vuelo:', 'tipo_vuelo', 0),
-            ('Altura Inicial (ft):', 'altura_inicial', 2),
-            ('Altura Final (ft):', 'altura_final', 2),
-            ('Tiempo de Ascenso:', 'tiempo_ascenso', 4),
-            ('Tiempo de Estadía:', 'tiempo_estadia', 4),
-            ('Tiempo de Descenso:', 'tiempo_descenso', 4),
-            ('Tiempo Total:', 'tiempo_total', 4)
-        ]
-        
-        for i, (label_text, var_name, col) in enumerate(fields):
-            label = ttkb.Label(flight_frame, text=label_text)
-            label.grid(row=i, column=col, sticky="w", padx=5, pady=2)
-            
-            entry = ttkb.Entry(
-                flight_frame,
-                textvariable=self.variables[var_name]
-            )
-            entry.grid(
-                row=i, column=col+1, sticky="ew", padx=5, pady=2
-            )
-        
-        # Observations
-        obs_label = ttkb.Label(flight_frame, text="Observaciones:")
-        obs_label.grid(row=10, column=0, sticky="w", padx=5, pady=2)
-        
-        obs_entry = ttkb.Entry(
-            flight_frame,
-            textvariable=self.variables['observaciones']
-        )
-        obs_entry.grid(
-            row=10, column=1, columnspan=3, sticky="ew", padx=5, pady=2
-        )
-        
-        # Pilot section
-        pilot_frame = ttkb.Labelframe(
-            self,
-            text="Datos del Piloto",
-            padding=10
-        )
-        pilot_frame.grid(
-            row=2, column=0, columnspan=2, sticky="ew", pady=(0, 10)
-        )
-        pilot_frame.columnconfigure(1, weight=1)
-        
-        # Pilot fields
-        pilot_fields = [
-            ('Nombre:', 'piloto_nombre'),
-            ('Grado:', 'piloto_grado'),
-            ('Unidad:', 'piloto_unidad')
-        ]
-        
-        for i, (label_text, var_name) in enumerate(pilot_fields):
-            label = ttkb.Label(pilot_frame, text=label_text)
-            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
-            
-            entry = ttkb.Entry(
-                pilot_frame,
-                textvariable=self.variables[var_name]
-            )
-            entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
-        
-        # Operator section
-        operator_frame = ttkb.Labelframe(
-            self,
-            text="Datos del Operador",
-            padding=10
-        )
-        operator_frame.grid(
-            row=3, column=0, columnspan=2, sticky="ew", pady=(0, 10)
-        )
-        operator_frame.columnconfigure(1, weight=1)
-        
-        # Operator fields
-        operator_fields = [
-            ('Nombre:', 'operador_nombre'),
-            ('Grado:', 'operador_grado'),
-            ('Unidad:', 'operador_unidad')
-        ]
-        
-        for i, (label_text, var_name) in enumerate(operator_fields):
-            label = ttkb.Label(operator_frame, text=label_text)
-            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
-            
-            entry = ttkb.Entry(
-                operator_frame,
-                textvariable=self.variables[var_name]
-            )
-            entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
-        
-        # Buttons
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
+        # Buttons section
         button_frame = ttkb.Frame(self)
-        button_frame.grid(row=4, column=0, columnspan=2, sticky="ew")
+        button_frame.grid(row=current_row, column=0, columnspan=2, sticky="ew")
         
         save_btn = ttkb.Button(
             button_frame,
@@ -284,7 +197,6 @@ class VueloTab(ttkb.Frame):
             bootstyle="warning",
             width=15
         )
-<<<<<<< HEAD
         clear_btn.pack(side=tk.RIGHT, padx=5, pady=5)
         
     def create_archive_widgets(self, parent):
@@ -389,26 +301,26 @@ class VueloTab(ttkb.Frame):
         actual_label_column = label_column + label_col_offset 
         label.grid(row=row, column=actual_label_column, padx=(15,5), pady=5, sticky="e")
         
-        # Create variable
-        var = tk.StringVar()
-        self.variables[var_name] = var
+        # Create variable if not already created
+        if var_name not in self.variables:
+            self.variables[var_name] = tk.StringVar()
         
         # Determine widget column
         widget_column = actual_label_column + 1
 
         # Create input widget
         if widget_type == "entry":
-            widget = ttkb.Entry(self, textvariable=var, width=width)
+            widget = ttkb.Entry(self, textvariable=self.variables[var_name], width=width)
         elif widget_type == "combobox":
             widget = ttkb.Combobox(
                 self,
-                textvariable=var,
+                textvariable=self.variables[var_name],
                 values=values if values else [],
                 width=width - 2, # Combobox width is slightly different
                 state="readonly"
             )
-            if values: # Set default value for combobox
-                var.set(values[0]) 
+            if values and not self.variables[var_name].get(): # Set default value for combobox if empty
+                self.variables[var_name].set(values[0]) 
         else:
             # Fallback for unknown types
             widget = ttkb.Label(self, text=f"Unknown widget: {widget_type}")
@@ -435,9 +347,6 @@ class VueloTab(ttkb.Frame):
              self.variables["fecha"].set(today_str)
         else:
              print("Error: 'fecha' variable not found.")
-=======
-        clear_btn.pack(side=tk.RIGHT, padx=5)
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
     
     def load_data(self):
         """Load flight data into the form fields."""
@@ -451,13 +360,12 @@ class VueloTab(ttkb.Frame):
     def save_data(self):
         """Save form data."""
         # Collect data from all variables
-        flight_data = {}
+        vuelo_data = {}
         for var_name, var in self.variables.items():
-            flight_data[var_name] = var.get()
+            vuelo_data[var_name] = var.get()
         
-<<<<<<< HEAD
-        # Save under the consistent key 'datos_vuelo'
-        self.data_manager.current_data['datos_vuelo'] = vuelo_data
+        # Save under the consistent key 'vuelo'
+        self.data_manager.current_data['vuelo'] = vuelo_data
         # Assume data_manager.save_data() saves the entire current_data structure
         try:
             self.data_manager.save_data()
@@ -532,20 +440,25 @@ class VueloTab(ttkb.Frame):
     
     def clear_form(self):
         """Clear all fields managed by self.variables."""
-        for field_name, var in self.variables.items():
-            # Reset to empty string, except for comboboxes which get default
-            if field_name == 'perfil_camara':
-                 var.set("IV-A")
-            elif field_name == 'curso':
-                 var.set("Primera vez")
-            else:
-                 var.set('')
-        
-        # Optionally clear the date field or set to today?
-        # self.variables['fecha'].set('') 
-        self.set_current_date() # Set date to today on clear
-        
-        print("Formulario de Vuelo limpiado.")
+        # Ask for confirmation
+        if messagebox.askyesno(
+            "Confirmar",
+            "¿Está seguro de que desea limpiar todos los campos?"
+        ):
+            for field_name, var in self.variables.items():
+                # Reset to empty string, except for comboboxes which get default
+                if field_name == 'perfil_camara':
+                    var.set("IV-A")
+                elif field_name == 'curso':
+                    var.set("Primera vez")
+                else:
+                    var.set('')
+            
+            # Set date to today on clear
+            self.set_current_date()
+            
+            # Show confirmation
+            messagebox.showinfo("Limpieza", "Campos limpiados exitosamente")
         
     def load_training_archives(self):
         """Load saved training archives from JSON file."""
@@ -701,7 +614,7 @@ class VueloTab(ttkb.Frame):
                 var.set(training_data[field_name])
         
         # Update current data in data_manager
-        self.data_manager.current_data['datos_vuelo'] = training_data.copy()
+        self.data_manager.current_data['vuelo'] = training_data.copy()
         
         # Save to current file
         try:
@@ -829,28 +742,3 @@ class VueloTab(ttkb.Frame):
 # Ensure imports are correct
 # Ensure AppConfig/DataManager are passed correctly during instantiation
 # Ensure ttkbootstrap is installed 
-=======
-        # Save to data manager
-        self.data_manager.current_data['vuelo'] = flight_data
-        self.data_manager.save_data()
-        
-        # Show success message
-        messagebox.showinfo(
-            "Guardado",
-            "Datos de vuelo guardados exitosamente"
-        )
-    
-    def clear_form(self):
-        """Clear all form fields."""
-        # Ask for confirmation
-        if messagebox.askyesno(
-            "Confirmar",
-            "¿Está seguro de que desea limpiar todos los campos?"
-        ):
-            # Clear all variables
-            for var in self.variables.values():
-                var.set('')
-            
-            # Show confirmation
-            messagebox.showinfo("Limpieza", "Campos limpiados exitosamente")
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3

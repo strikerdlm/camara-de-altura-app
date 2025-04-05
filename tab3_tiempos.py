@@ -4,10 +4,10 @@
 import tkinter as tk
 import ttkbootstrap as ttkb
 from tkinter import messagebox
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class TiemposTab(ttkb.Frame):
     """Tab for managing time records."""
@@ -17,11 +17,13 @@ class TiemposTab(ttkb.Frame):
         self.parent = parent
         self.data_manager = data_manager
         
+        # Set number of students
+        self.num_students = 8
+        
         # Create variables for form fields
         self.variables = {}
         self.create_variables()
         
-<<<<<<< HEAD
         # Time Event Definitions (key, display_text)
         self.time_event_definitions = [
             ('ingreso_alumnos', 'Ingreso alumnos a la cámara'),
@@ -54,11 +56,11 @@ class TiemposTab(ttkb.Frame):
         self.auto_update_timer = None
         
         self.initialize_data()
-=======
-        # Create the layout
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
         self.create_widgets()
         self.load_data()
+        
+        # Setup destroy handler
+        self.bind("<Destroy>", self.on_destroy)
     
     def create_variables(self):
         """Create variables for form fields."""
@@ -70,7 +72,6 @@ class TiemposTab(ttkb.Frame):
         self.variables['descripcion'] = tk.StringVar()
         self.variables['observaciones'] = tk.StringVar()
         
-<<<<<<< HEAD
         # Start auto-update timer for real-time displays
         self.start_auto_update_timer()
         
@@ -80,17 +81,10 @@ class TiemposTab(ttkb.Frame):
         loaded_times = self.data_manager.current_data.get('event_times', {})
         self.event_times = {key: loaded_times.get(key) for key in self.event_keys}
 
-=======
-        # Operator data
-        self.variables['operador_nombre'] = tk.StringVar()
-        self.variables['operador_grado'] = tk.StringVar()
-        self.variables['operador_unidad'] = tk.StringVar()
-    
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
     def create_widgets(self):
         """Create the tab UI widgets."""
         # Configure grid
-        self.columnconfigure(1, weight=1)
+        self.columnconfigure(0, weight=1)
         
         # Header
         header = ttkb.Label(
@@ -99,18 +93,31 @@ class TiemposTab(ttkb.Frame):
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )
-        header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        header.grid(row=0, column=0, sticky="w", pady=(0, 10))
         
-        # Time data section
-        time_frame = ttkb.Labelframe(
-            self,
-            text="Datos del Tiempo",
-            padding=10
-        )
-        time_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 10))
-        time_frame.columnconfigure(1, weight=1)
+        # Create a notebook for different time tracking sections
+        self.time_notebook = ttkb.Notebook(self)
+        self.time_notebook.grid(row=1, column=0, sticky="nsew", pady=5)
         
-<<<<<<< HEAD
+        # Tab 1: Event Times
+        self.event_times_frame = ttkb.Frame(self.time_notebook, padding=10)
+        self.time_notebook.add(self.event_times_frame, text="Eventos Principales")
+        self.create_event_times_section(self.event_times_frame)
+        
+        # Tab 2: Student Hypoxia Times
+        self.student_times_frame = ttkb.Frame(self.time_notebook, padding=10)
+        self.time_notebook.add(self.student_times_frame, text="Tiempos de Hipoxia")
+        self.create_student_hypoxia_section(self.student_times_frame)
+        
+        # Tab 3: Calculated Totals
+        self.totals_frame = ttkb.Frame(self.time_notebook, padding=10)
+        self.time_notebook.add(self.totals_frame, text="Totales Calculados")
+        self.create_calculated_totals_section(self.totals_frame)
+        
+        # Button frame at the bottom
+        button_frame = ttkb.Frame(self)
+        button_frame.grid(row=2, column=0, sticky="ew", pady=10)
+        
         save_btn = ttkb.Button(
             button_frame, 
             text="Guardar Tiempos", 
@@ -287,60 +294,167 @@ class TiemposTab(ttkb.Frame):
             ("total_vuelo", "Tiempo Total de Vuelo:"),
             ("total_hipoxia", "Tiempo de Hipoxia:"),
             ("total_vision", "Tiempo de Visión Nocturna:")
-=======
-        # Time data fields
-        fields = [
-            ('Fecha:', 'fecha'),
-            ('Hora Inicio:', 'hora_inicio'),
-            ('Hora Fin:', 'hora_fin'),
-            ('Tipo de Tiempo:', 'tipo_tiempo'),
-            ('Descripción:', 'descripcion'),
-            ('Observaciones:', 'observaciones')
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
         ]
         
-        for i, (label_text, var_name) in enumerate(fields):
-            label = ttkb.Label(time_frame, text=label_text)
-            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+        for i, (key, label_text) in enumerate(total_definitions):
+            # Label
+            label = ttkb.Label(parent, text=label_text, anchor='w')
+            label.grid(row=i, column=0, padx=5, pady=5, sticky='w')
             
-            if var_name in ['descripcion', 'observaciones']:
-                entry = ttkb.Entry(
-                    time_frame,
-                    textvariable=self.variables[var_name]
-                )
-                entry.grid(
-                    row=i, column=1, columnspan=3, sticky="ew", padx=5, pady=2
-                )
-            else:
-                entry = ttkb.Entry(
-                    time_frame,
-                    textvariable=self.variables[var_name]
-                )
-                entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
-        
-        # Operator section
-        operator_frame = ttkb.Labelframe(
-            self,
-            text="Datos del Operador",
-            padding=10
-        )
-        operator_frame.grid(
-            row=2, column=0, columnspan=2, sticky="ew", pady=(0, 10)
-        )
-        operator_frame.columnconfigure(1, weight=1)
-        
-        # Operator fields
-        operator_fields = [
-            ('Nombre:', 'operador_nombre'),
-            ('Grado:', 'operador_grado'),
-            ('Unidad:', 'operador_unidad')
-        ]
-        
-        for i, (label_text, var_name) in enumerate(operator_fields):
-            label = ttkb.Label(operator_frame, text=label_text)
-            label.grid(row=i, column=0, sticky="w", padx=5, pady=2)
+            # Time Display Label
+            time_var = tk.StringVar(value="00:00:00")
+            self.calculated_total_time_vars[key] = time_var
             
-<<<<<<< HEAD
+            time_label = ttkb.Label(
+                parent,
+                textvariable=time_var,
+                font=('Consolas', 12, 'bold'),
+                anchor='w',
+                bootstyle="info" # Make it stand out
+            )
+            time_label.grid(row=i, column=1, padx=5, pady=5, sticky='w')
+        
+        # Add update button
+        update_btn = ttkb.Button(
+            parent,
+            text="Actualizar Totales",
+            command=self.update_calculated_totals,
+            bootstyle="info",
+            width=15
+        )
+        update_btn.grid(row=len(total_definitions), column=0, columnspan=2, pady=10, sticky='e')
+    
+    def update_calculated_totals(self):
+        """Calculate and update the total times based on event times."""
+        # Total Flight Time: desde inicio_ascenso hasta finalizacion_perfil
+        start_vuelo = self.event_times.get('inicio_ascenso')
+        end_vuelo = self.event_times.get('finalizacion_perfil')
+        if start_vuelo and end_vuelo:
+            try:
+                start_time = datetime.strptime(start_vuelo, '%H:%M:%S')
+                end_time = datetime.strptime(end_vuelo, '%H:%M:%S')
+                
+                # Convert to today's date for proper timedelta calculation
+                now = datetime.now()
+                start_datetime = now.replace(hour=start_time.hour, minute=start_time.minute, second=start_time.second)
+                end_datetime = now.replace(hour=end_time.hour, minute=end_time.minute, second=end_time.second)
+                
+                # Handle overnight flights (if end is earlier than start)
+                if end_datetime < start_datetime:
+                    end_datetime += timedelta(days=1)
+                
+                # Calculate duration
+                delta = end_datetime - start_datetime
+                total_seconds = int(delta.total_seconds())
+                
+                # Format as HH:MM:SS
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+                
+                # Update the display
+                if 'total_vuelo' in self.calculated_total_time_vars:
+                    self.calculated_total_time_vars['total_vuelo'].set(time_str)
+            except Exception as e:
+                print(f"Error calculating total flight time: {e}")
+        
+        # Total Hipoxia Time: desde inicio_hipoxia hasta fin_hipoxia
+        self.calculate_time_range('inicio_hipoxia', 'fin_hipoxia', 'total_hipoxia')
+        
+        # Total Vision Nocturna Time: desde inicio_vision_nocturna hasta fin_vision_nocturna
+        self.calculate_time_range('inicio_vision_nocturna', 'fin_vision_nocturna', 'total_vision')
+    
+    def calculate_time_range(self, start_key, end_key, total_var_key):
+        """Helper to calculate time between two events."""
+        start_time_str = self.event_times.get(start_key)
+        end_time_str = self.event_times.get(end_key)
+        
+        if start_time_str and end_time_str:
+            try:
+                start_time = datetime.strptime(start_time_str, '%H:%M:%S')
+                end_time = datetime.strptime(end_time_str, '%H:%M:%S')
+                
+                # Convert to today's date for proper timedelta calculation
+                now = datetime.now()
+                start_datetime = now.replace(hour=start_time.hour, minute=start_time.minute, second=start_time.second)
+                end_datetime = now.replace(hour=end_time.hour, minute=end_time.minute, second=end_time.second)
+                
+                # Handle overnight (if end is earlier than start)
+                if end_datetime < start_datetime:
+                    end_datetime += timedelta(days=1)
+                
+                # Calculate duration
+                delta = end_datetime - start_datetime
+                total_seconds = int(delta.total_seconds())
+                
+                # Format as HH:MM:SS
+                hours, remainder = divmod(total_seconds, 3600)
+                minutes, seconds = divmod(remainder, 60)
+                time_str = f"{hours:02}:{minutes:02}:{seconds:02}"
+                
+                # Update the display
+                if total_var_key in self.calculated_total_time_vars:
+                    self.calculated_total_time_vars[total_var_key].set(time_str)
+            except Exception as e:
+                print(f"Error calculating time range for {start_key} to {end_key}: {e}")
+    
+    def load_data(self):
+        """Load saved event times and update UI."""
+        # Load event times from data_manager
+        event_times = self.data_manager.current_data.get('event_times', {})
+        
+        # Update UI with loaded times
+        for key in self.event_keys:
+            if key in event_times and event_times[key]:
+                self.event_times[key] = event_times[key]
+                if key in self.event_time_vars:
+                    self.event_time_vars[key].set(event_times[key])
+                    # Update label style
+                    label_widget = self.event_time_vars.get(f"{key}_label")
+                    if label_widget:
+                        label_widget.configure(bootstyle="success")
+        
+        # Update calculated totals
+        self.update_calculated_totals()
+    
+    def save_data(self):
+        """Save event times to data_manager."""
+        # Save event times
+        self.data_manager.current_data['event_times'] = self.event_times
+        self.data_manager.save_data()
+        
+        # Show success message
+        messagebox.showinfo(
+            "Guardado",
+            "Datos de tiempos guardados exitosamente"
+        )
+    
+    def clear_form(self):
+        """Clear all time event data after confirmation."""
+        # Ask for confirmation
+        confirm = messagebox.askyesno(
+            "Confirmar",
+            "¿Está seguro de que desea limpiar todos los datos de tiempos?",
+            icon="warning"
+        )
+        
+        if not confirm:
+            return
+            
+        # Clear event times
+        for key in self.event_keys:
+            self.event_times[key] = None
+            if key in self.event_time_vars:
+                self.event_time_vars[key].set("--:--:--")
+                # Reset label style
+                label_widget = self.event_time_vars.get(f"{key}_label")
+                if label_widget:
+                    label_widget.configure(bootstyle="secondary")
+        
+        # Clear student hypoxia times
+        for var in self.student_hypoxia_time_vars.values():
+            var.set("00:00:00")
+            
         # Clear calculated totals display
         for var in self.calculated_total_time_vars.values():
              var.set("00:00:00")
@@ -377,9 +491,9 @@ class TiemposTab(ttkb.Frame):
         print("Pantalla de Tiempos limpiada. Datos almacenados intactos.")
         
         # Optionally show a message to the user
-        Messagebox.show_info(
-            "Pantalla limpiada con éxito. Los datos almacenados permanecen intactos.",
+        messagebox.showinfo(
             "Pantalla Limpiada",
+            "Pantalla limpiada con éxito. Los datos almacenados permanecen intactos.",
             parent=self
         ) 
 
@@ -398,101 +512,16 @@ class TiemposTab(ttkb.Frame):
         end_hypoxia = self.event_times.get('fin_hipoxia')
         
         if start_hypoxia and not end_hypoxia:
-            # Hypoxia exercise is ongoing - update all student times
-            for student_id in range(1, self.num_students + 1):
-                self.calculate_student_hypoxia_time(str(student_id))
+            # Hypoxia is ongoing, update all student times
+            for student_id in self.student_hypoxia_time_vars.keys():
+                self.calculate_student_hypoxia_time(student_id)
         
-        # Schedule next update
+        # Reschedule the timer
         self.auto_update_timer = self.after(1000, self.update_time_displays)
-
+    
     def on_destroy(self, event=None):
-        """Clean up resources when tab is destroyed."""
-        # Cancel the auto-update timer if it's running
+        """Cancel timers and perform cleanup when the tab is destroyed."""
+        print("TiemposTab is being destroyed - cleaning up")
         if self.auto_update_timer:
             self.after_cancel(self.auto_update_timer)
             self.auto_update_timer = None
-
-# Bind the destroy event to clean up resources
-if __name__ != "__main__":
-    def setup_destroy_handler(self):
-        """Set up the destroy event handler."""
-        self.bind("<Destroy>", self.on_destroy)
-    
-    # Add method to TiemposTab class
-    TiemposTab.setup_destroy_handler = setup_destroy_handler
-    
-    # Patch the __init__ method to call setup_destroy_handler
-    original_init = TiemposTab.__init__
-    def patched_init(self, *args, **kwargs):
-        original_init(self, *args, **kwargs)
-        self.setup_destroy_handler()
-    TiemposTab.__init__ = patched_init 
-=======
-            entry = ttkb.Entry(
-                operator_frame,
-                textvariable=self.variables[var_name]
-            )
-            entry.grid(row=i, column=1, sticky="ew", padx=5, pady=2)
-        
-        # Buttons
-        button_frame = ttkb.Frame(self)
-        button_frame.grid(row=3, column=0, columnspan=2, sticky="ew")
-        
-        save_btn = ttkb.Button(
-            button_frame,
-            text="Guardar Datos",
-            command=self.save_data,
-            bootstyle="success",
-            width=15
-        )
-        save_btn.pack(side=tk.RIGHT, padx=5)
-        
-        clear_btn = ttkb.Button(
-            button_frame,
-            text="Limpiar Campos",
-            command=self.clear_form,
-            bootstyle="warning",
-            width=15
-        )
-        clear_btn.pack(side=tk.RIGHT, padx=5)
-    
-    def load_data(self):
-        """Load time data into the form fields."""
-        # Get time data from data manager
-        time_data = self.data_manager.current_data.get('tiempos', {})
-        
-        # Load data into variables
-        for var_name, var in self.variables.items():
-            var.set(time_data.get(var_name, ''))
-    
-    def save_data(self):
-        """Save form data."""
-        # Collect data from all variables
-        time_data = {}
-        for var_name, var in self.variables.items():
-            time_data[var_name] = var.get()
-        
-        # Save to data manager
-        self.data_manager.current_data['tiempos'] = time_data
-        self.data_manager.save_data()
-        
-        # Show success message
-        messagebox.showinfo(
-            "Guardado",
-            "Datos de tiempos guardados exitosamente"
-        )
-    
-    def clear_form(self):
-        """Clear all form fields."""
-        # Ask for confirmation
-        if messagebox.askyesno(
-            "Confirmar",
-            "¿Está seguro de que desea limpiar todos los campos?"
-        ):
-            # Clear all variables
-            for var in self.variables.values():
-                var.set('')
-            
-            # Show confirmation
-            messagebox.showinfo("Limpieza", "Campos limpiados exitosamente")
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3

@@ -45,21 +45,14 @@ class RDTab(ttkb.Frame):
         # Configure grid
         self.columnconfigure(1, weight=1)
         
-<<<<<<< HEAD
         # Title
         title_label = ttkb.Label(
             self, 
             text="PERFIL DE DESCOMPRESIÓN RÁPIDA", 
-=======
-        # Header
-        header = ttkb.Label(
-            self,
-            text="Registro de RD",
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
             font=('Segoe UI', 14, 'bold'),
             bootstyle="primary"
         )
-        header.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
+        title_label.grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
         
         # RD data section
         rd_frame = ttkb.Labelframe(

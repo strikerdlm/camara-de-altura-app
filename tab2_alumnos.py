@@ -3,16 +3,10 @@
 
 import tkinter as tk
 import ttkbootstrap as ttkb
-<<<<<<< HEAD
 from tkinter import messagebox, filedialog
 from typing import Dict, Any, List
 from ttkbootstrap.scrolled import ScrolledFrame
 import pandas as pd
-=======
-from tkinter import messagebox
-from typing import Dict, List, Any
-import json
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
 import os
 
 class AlumnosTab(ttkb.Frame):
@@ -90,7 +84,6 @@ class AlumnosTab(ttkb.Frame):
             bootstyle="warning",
             width=15
         )
-<<<<<<< HEAD
         clear_btn.pack(side=tk.RIGHT, padx=5, pady=5)
         
         import_btn = ttkb.Button(
@@ -129,9 +122,6 @@ class AlumnosTab(ttkb.Frame):
         for i, participant_id in enumerate(participant_ids):
             current_row = i + 2 # Offset for header and separator
             self._create_person_row(parent_frame, current_row, participant_id)
-=======
-        clear_btn.pack(side=tk.RIGHT, padx=5)
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
     
     def create_student_row(self, row: int, position: str):
         """Create a row of entry fields for a student."""
@@ -251,28 +241,20 @@ class AlumnosTab(ttkb.Frame):
         messagebox.showinfo("Guardado", "Datos de alumnos guardados exitosamente")
     
     def clear_form(self):
-<<<<<<< HEAD
-        """Clear all participant data fields after confirmation."""
-        confirm = messagebox.askyesno(
-            "Confirmar Limpieza",
-            "¿Está seguro que desea limpiar TODOS los datos de Alumnos y OI?",
-            icon="warning",
-            parent=self # Ensure messagebox is modal to this tab/window
-        )
-        
-        if not confirm:
-            return
-        
-        # Clear all variables
-        for participant_id, fields_dict in self.participant_vars.items():
-            for field_key, var in fields_dict.items():
-                 if field_key == 'genero':
-                     var.set(self.gender_options[-1]) # Reset combobox to default '-'
-                 else:
-                     var.set('')
-        
-        print("Formulario Alumnos/OI limpiado.")
-        # self.show_toast("Formulario limpiado") # Optional Toast
+        """Clear all form fields."""
+        # Ask for confirmation
+        if messagebox.askyesno(
+            "Confirmar",
+            "¿Está seguro de que desea limpiar todos los campos?"
+        ):
+            # Clear all variables except positions
+            for student_vars in self.student_data:
+                for key, var in student_vars.items():
+                    if key != 'position':
+                        var.set('')
+            
+            # Show confirmation
+            messagebox.showinfo("Limpieza", "Campos limpiados exitosamente")
     
     def import_from_excel(self):
         """Open file dialog to import student data from Excel."""
@@ -581,21 +563,3 @@ class AlumnosTab(ttkb.Frame):
         
         # Save data after import
         self.save_data()
-    
-    # --- Removed show_toast method if not needed or handled globally --- 
-=======
-        """Clear all form fields."""
-        # Ask for confirmation
-        if messagebox.askyesno(
-            "Confirmar",
-            "¿Está seguro de que desea limpiar todos los campos?"
-        ):
-            # Clear all variables except positions
-            for student_vars in self.student_data:
-                for key, var in student_vars.items():
-                    if key != 'position':
-                        var.set('')
-            
-            # Show confirmation
-            messagebox.showinfo("Limpieza", "Campos limpiados exitosamente")
->>>>>>> 05623bafcb4dd46d5d368abaece58d4cebd092c3
