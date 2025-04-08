@@ -5,7 +5,7 @@ echo ======================================================
 echo.
 
 :: Try to run with Python directly
-python entry.py
+python main.py
 if %errorlevel% neq 0 (
     echo.
     echo ERROR: No se pudo iniciar la aplicacion.
@@ -13,15 +13,15 @@ if %errorlevel% neq 0 (
     
     :: Try with Python from standard installation paths
     if exist "C:\Python312\python.exe" (
-        "C:\Python312\python.exe" entry.py
+        "C:\Python312\python.exe" main.py
     ) else if exist "C:\Python311\python.exe" (
-        "C:\Python311\python.exe" entry.py
+        "C:\Python311\python.exe" main.py
     ) else if exist "C:\Python310\python.exe" (
-        "C:\Python310\python.exe" entry.py
+        "C:\Python310\python.exe" main.py
     ) else if exist "C:\Python39\python.exe" (
-        "C:\Python39\python.exe" entry.py
+        "C:\Python39\python.exe" main.py
     ) else if exist "C:\Python38\python.exe" (
-        "C:\Python38\python.exe" entry.py
+        "C:\Python38\python.exe" main.py
     ) else (
         echo.
         echo ERROR: No se pudo encontrar Python.
