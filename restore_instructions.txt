@@ -1,0 +1,42 @@
+# INSTRUCCIONES PARA RESTAURAR LA APLICACIÓN
+
+## Paso 1: Extraer el archivo de respaldo
+1. Navegue a la carpeta `app_backup` desde el explorador de Windows
+2. Extraiga el archivo `a_camara.rar` a una carpeta temporal (por ejemplo, `temp_restore`)
+   - Haga clic derecho sobre el archivo .rar y seleccione "Extraer aquí" o "Extraer a..."
+
+## Paso 2: Restaurar los archivos específicos
+1. Una vez extraído, encontrará las versiones anteriores de los archivos
+2. Copie los siguientes archivos desde la carpeta extraída a su carpeta principal del proyecto:
+   - `tab2_alumnos.py`
+   - `tab4_rd.py`
+   - `tab5_reactores.py` 
+   - `tab6_sintomas.py`
+   - `tab7_exportar.py`
+
+## Paso 3: Corregir la importación de ScrolledFrame
+Para asegurarse de que la aplicación funcione correctamente, hay que verificar que todos los archivos restaurados tengan la importación correcta para ScrolledFrame:
+
+En cada uno de los archivos mencionados arriba, asegúrese que tienen esta línea en la sección de importaciones:
+```python
+from ttkbootstrap.scrolled import ScrolledFrame
+```
+
+Si encuentra una línea como:
+```python
+from ttk.scrolled import ScrolledFrame
+```
+o similar, reemplácela por la línea correcta.
+
+## Paso 4: Verificar la aplicación
+1. Ejecute la aplicación con el comando:
+```
+python main.py
+```
+2. Verifique que todas las pestañas funcionen correctamente
+3. En caso de errores, revise los mensajes y corrija las importaciones según sea necesario
+
+## Nota importante
+Si ha realizado cambios importantes hoy a los archivos mencionados, esos cambios se perderán al restaurar. En ese caso, podría ser mejor intentar corregir los errores específicos en lugar de restaurar completamente.
+
+Le recomendamos que mantenga una copia del archivo `current_backup.zip` que se acaba de crear como respaldo de la versión actual. 

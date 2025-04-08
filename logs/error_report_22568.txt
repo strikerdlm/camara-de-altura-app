@@ -1,0 +1,40 @@
+CRITICAL ERROR REPORT
+='=' * 50 + '
+Error Type: TclError
+Error Message: can't invoke "tk" command: application has been destroyed
+Platform: Windows-11-10.0.26120-SP0
+Python Version: 3.12.6
+='=' * 50 + '
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 582, in launch_main_app
+    app = MainApp(main_root)
+          ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 440, in __init__
+    self.create_tabs()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 465, in create_tabs
+    self.tab1 = tab_modules['VueloTab'](self.notebook, self.data_manager)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab1_vuelo.py", line 29, in __init__
+    self.create_widgets()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab1_vuelo.py", line 70, in create_widgets
+    self._create_field(current_row, 2, "Curso:", "curso", label_col_offset=1,
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab1_vuelo.py", line 278, in _create_field
+    widget = ttkb.Combobox(
+             ^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\venv\Lib\site-packages\ttkbootstrap\style.py", line 4941, in __init__
+    func(self, *args, **kwargs)
+  File "C:\Python312\Lib\tkinter\ttk.py", line 677, in __init__
+    Entry.__init__(self, master, "ttk::combobox", **kw)
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\venv\Lib\site-packages\ttkbootstrap\style.py", line 4960, in __init__
+    ttkstyle = Bootstyle.update_ttk_widget_style(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\venv\Lib\site-packages\ttkbootstrap\style.py", line 5050, in update_ttk_widget_style
+    builder_method(builder, widget_color)
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\venv\Lib\site-packages\ttkbootstrap\style.py", line 1215, in create_combobox_style
+    arrowsize=self.scale_size(12),
+              ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\venv\Lib\site-packages\ttkbootstrap\style.py", line 1116, in scale_size
+    winsys = self.style.master.tk.call("tk", "windowingsystem")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_tkinter.TclError: can't invoke "tk" command: application has been destroyed
