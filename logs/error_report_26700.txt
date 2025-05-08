@@ -1,0 +1,25 @@
+CRITICAL ERROR REPORT
+='=' * 50 + '
+Error Type: NameError
+Error Message: name 'student_str' is not defined
+Platform: Windows-10-10.0.26120-SP0
+Python Version: 3.11.11
+='=' * 50 + '
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 1342, in launch_main_app
+    app = MainApp(splash_root)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 918, in __init__
+    self.setup_ui()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 1096, in setup_ui
+    self.create_tabs()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 1125, in create_tabs
+    self.tab3 = tab_modules['TiemposTab'](self.notebook, self.data_manager, self)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab3_tiempos.py", line 85, in __init__
+    self.load_data()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab3_tiempos.py", line 761, in load_data
+    self.student_hypoxia_entries[student_str].configure(bootstyle=style)
+                                 ^^^^^^^^^^^
+NameError: name 'student_str' is not defined

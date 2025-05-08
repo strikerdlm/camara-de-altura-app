@@ -1,0 +1,27 @@
+CRITICAL ERROR REPORT
+='=' * 50 + '
+Error Type: AttributeError
+Error Message: 'ScrolledFrame' object has no attribute 'child'
+Platform: Windows-10-10.0.26120-SP0
+Python Version: 3.11.11
+='=' * 50 + '
+
+Traceback (most recent call last):
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 1342, in launch_main_app
+    app = MainApp(splash_root)
+          ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 918, in __init__
+    self.setup_ui()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 1096, in setup_ui
+    self.create_tabs()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\main.py", line 1125, in create_tabs
+    self.tab3 = tab_modules['TiemposTab'](self.notebook, self.data_manager, self)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab3_tiempos.py", line 95, in __init__
+    self.create_widgets()
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab3_tiempos.py", line 179, in create_widgets
+    self.create_event_times_section(self.event_times_frame)
+  File "C:\Users\User\OneDrive\FAC\Research\Python Scripts\Textapp\a_camara\tab3_tiempos.py", line 222, in create_event_times_section
+    events_container = scrolled_events_area.child
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'ScrolledFrame' object has no attribute 'child'

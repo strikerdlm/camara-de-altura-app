@@ -1,0 +1,15 @@
+# Ignore backup, exports, venv, and typical Python cache folders
+backup/
+exports/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.logs/
+.DS_Store
+.env
+.idea/
+.vscode/
+registry/ 

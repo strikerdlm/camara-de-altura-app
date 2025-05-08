@@ -1,0 +1,12 @@
+{
+    "app_name": "Registro Entrenamiento en Cámara Hipobárica",
+    "version": "1.0.0",
+    "theme": "litera",
+    "data_directory": "data",
+    "backup_directory": "backup",
+    "log_directory": "logs",
+    "autosave_interval": 10,
+    "debug_mode": false,
+    "language": "es_ES",
+    "default_window_size": "1200x800"
+}

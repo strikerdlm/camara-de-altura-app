@@ -1,0 +1,33 @@
+import os
+from PIL import Image, ImageTk
+from utils.decorators import try_except_decorator
+
+class WelcomeScreen:
+    @try_except_decorator(log_error=True)
+    def set_icon(self):
+        """Set the application icon using PNG directly"""
+        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icon.png")
+        if os.path.exists(icon_path):
+            try:
+                # Use PhotoImage for PNG icons
+                icon_img = Image.open(icon_path)
+                icon_photo = ImageTk.PhotoImage(icon_img)
+                
+                # Try to set icon using both methods for compatibility
+                if hasattr(self.root, 'iconphoto'):
+                    self.root.iconphoto(True, icon_photo)
+                
+                # On Windows, also try the wm_iconbitmap method with .ico if available
+                if os.name == 'nt':
+                    ico_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icon.ico")
+                    if os.path.exists(ico_path):
+                        self.root.wm_iconbitmap(ico_path)
+                        logger.info("Set icon using wm_iconbitmap on Windows")
+                
+                # Keep a reference to prevent garbage collection
+                self.icon_photo = icon_photo
+                logger.info("Welcome screen icon set successfully")
+            except Exception as e:
+                logger.error(f"Could not set welcome screen icon: {e}")
+        else:
+            logger.error(f"Icon file not found at {icon_path}") 
