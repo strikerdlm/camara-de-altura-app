@@ -258,31 +258,45 @@ class DataManager:
         """
         try:
             # Path to the archives directory
-            archives_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'archives')
+            archives_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'archives')
             
             # Check if archives directory exists
             if not os.path.exists(archives_dir):
-                print(f"Archives directory not found: {archives_dir}")
+                print(f"DataManager: Archives directory not found: {archives_dir}")
                 return {}
             
             # Path to the full training data archives file
             full_data_file = os.path.join(archives_dir, 'training_full_data.json')
+            print(f"DataManager: Attempting to load full data from: {full_data_file}")
             
             # If full data file exists, load all tab data for this training
             if os.path.exists(full_data_file):
-                with open(full_data_file, 'r', encoding='utf-8') as f:
-                    all_training_data = json.load(f)
+                print(f"DataManager: File {full_data_file} exists.")
+                try:
+                    with open(full_data_file, 'r', encoding='utf-8') as f:
+                        all_training_data = json.load(f)
+                    print(f"DataManager: Successfully parsed JSON from {full_data_file}.")
                     
                     # Check if this training ID exists in the full data
                     if training_id in all_training_data:
-                        print(f"Found full archived data for training ID: {training_id}")
+                        print(f"DataManager: Found full archived data for training ID: {training_id}")
                         return all_training_data[training_id]
-            
-            # If not found or file doesn't exist, return empty dict
-            return {}
+                    else:
+                        print(f"DataManager: Training ID '{training_id}' NOT FOUND in keys of {full_data_file}.")
+                        print(f"DataManager: Available keys: {list(all_training_data.keys())}")
+                        return {}
+                except json.JSONDecodeError as e_json:
+                    print(f"DataManager: JSONDecodeError while reading {full_data_file}: {e_json}")
+                    return {}
+                except Exception as e_open:
+                    print(f"DataManager: Error opening/reading {full_data_file}: {e_open}")
+                    return {}
+            else:
+                print(f"DataManager: File {full_data_file} DOES NOT EXIST.")
+                return {}
             
         except Exception as e:
-            print(f"Error loading archived data: {e}")
+            print(f"DataManager: General error in load_archived_data for {training_id}: {e}")
             return {}
 
     def load_training(self, session_id):

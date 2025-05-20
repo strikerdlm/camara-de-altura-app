@@ -813,7 +813,11 @@ class TiemposTab(ttkb.Frame):
             session_data['event_times'] = times_to_save
             session_data['student_hypoxia_end_times'] = hypoxia_times_to_save
             session_data['manual_student_hypoxia_elapsed_times'] = manual_elapsed_to_save
-            session_data['displayed_calculated_totals'] = self.calculated_total_time_vars
+            # Convert StringVar objects to their string values before saving
+            displayed_totals_values = {
+                key: var.get() for key, var in self.calculated_total_time_vars.items()
+            }
+            session_data['displayed_calculated_totals'] = displayed_totals_values
         print(f"Tab3_Tiempos: Updated its data in DataManager for session {session_id}")
 
     def save_data(self, triggered_by_user=True, show_message=True):
