@@ -636,6 +636,12 @@ class TiemposTab(ttkb.Frame):
         self.calculate_time_range('fin_vision_nocturna', 'finalizacion_perfil', 'total_descenso')
         # Total Entrenamiento: desde ingreso_alumnos hasta finalizacion_entrenamiento
         self.calculate_time_range('ingreso_alumnos', 'finalizacion_entrenamiento', 'total_entrenamiento')
+        
+        # Save the calculated totals to data_manager for export
+        displayed_totals_values = {
+            key: var.get() for key, var in self.calculated_total_time_vars.items()
+        }
+        self.data_manager.current_data['displayed_calculated_totals'] = displayed_totals_values
     
     def calculate_time_range(self, start_key, end_key, total_var_key):
         """Helper to calculate time between two events."""
@@ -792,6 +798,13 @@ class TiemposTab(ttkb.Frame):
                 manual_elapsed_to_save[student_id] = time_val
         self.data_manager.current_data['manual_student_hypoxia_elapsed_times'] = manual_elapsed_to_save
         
+        # Convert StringVar objects to their string values before saving
+        displayed_totals_values = {
+            key: var.get() for key, var in self.calculated_total_time_vars.items()
+        }
+        # Save at top level for export compatibility
+        self.data_manager.current_data['displayed_calculated_totals'] = displayed_totals_values
+        
         session_id = self.data_manager.current_data.get('vuelo', {}).get('numero_entrenamiento', '')
         if not session_id:
             vuelo_del_ano = self.data_manager.current_data.get('vuelo', {}).get('vuelo_del_ano', '')
@@ -813,10 +826,7 @@ class TiemposTab(ttkb.Frame):
             session_data['event_times'] = times_to_save
             session_data['student_hypoxia_end_times'] = hypoxia_times_to_save
             session_data['manual_student_hypoxia_elapsed_times'] = manual_elapsed_to_save
-            # Convert StringVar objects to their string values before saving
-            displayed_totals_values = {
-                key: var.get() for key, var in self.calculated_total_time_vars.items()
-            }
+            # Also save in session data for consistency
             session_data['displayed_calculated_totals'] = displayed_totals_values
         print(f"Tab3_Tiempos: Updated its data in DataManager for session {session_id}")
 
