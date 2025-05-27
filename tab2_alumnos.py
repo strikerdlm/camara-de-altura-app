@@ -39,6 +39,7 @@ class AlumnosTab(ttkb.Frame):
         # Data structure to hold tk variables for all entries
         self.participant_vars: Dict[str, Dict[str, tk.StringVar]] = {}
         self.chair_vars: Dict[str, tk.StringVar] = {}  # Dict for chair variables
+        self.training_completed_vars: Dict[str, tk.BooleanVar] = {}  # Dict for training completion checkboxes
         
         # Define headers and corresponding variable keys (must match rules)
         self.headers = ["Silla", "Grado", "Apellido y Nombre", "Edad", "Genero", 
@@ -182,13 +183,25 @@ class AlumnosTab(ttkb.Frame):
         )
         clear_header.grid(row=0, column=len(self.headers), padx=5, pady=(5, 2), sticky='ew')
         
+        # Add header for training completed column
+        completed_header = ttkb.Label(
+            parent_frame,
+            text="Termina\nentrenamiento",
+            font=('Segoe UI', 10, 'bold'),
+            bootstyle=header_bootstyle,
+            width=12,
+            anchor='center',  # Center align header
+            justify='center'
+        )
+        completed_header.grid(row=0, column=len(self.headers) + 1, padx=5, pady=(5, 2), sticky='ew')
+        
         # Configure column weights to maintain alignment
-        for i in range(len(self.headers) + 1):  # +1 for clear button
+        for i in range(len(self.headers) + 2):  # +2 for clear button and completed checkbox
             parent_frame.grid_columnconfigure(i, weight=1)
         
         # Add separator below header
         separator = ttkb.Separator(parent_frame, orient="horizontal")
-        separator.grid(row=1, column=0, columnspan=len(self.headers) + 1, sticky="ew", pady=(0, 5))
+        separator.grid(row=1, column=0, columnspan=len(self.headers) + 2, sticky="ew", pady=(0, 5))
 
         # Create rows for each participant
         for i, participant_id in enumerate(participant_ids):
@@ -201,10 +214,10 @@ class AlumnosTab(ttkb.Frame):
         
         # Create a frame for this row to hold all widgets
         row_frame = ttkb.Frame(parent_frame)
-        row_frame.grid(row=row, column=0, columnspan=len(self.headers) + 1, sticky='ew')
+        row_frame.grid(row=row, column=0, columnspan=len(self.headers) + 2, sticky='ew')
         
         # Configure column weights in row_frame to match parent
-        for i in range(len(self.headers) + 1):
+        for i in range(len(self.headers) + 2):
             row_frame.grid_columnconfigure(i, weight=1)
         
         # Create chair selection dropdown
@@ -264,6 +277,22 @@ class AlumnosTab(ttkb.Frame):
             width=3
         )
         clear_btn.grid(row=0, column=len(self.headers), padx=5, pady=2, sticky='ew')
+        
+        # Add training completed checkbox
+        completed_var = tk.BooleanVar(value=False)
+        self.training_completed_vars[participant_id] = completed_var
+        
+        # Create a frame to center the checkbox
+        checkbox_frame = ttkb.Frame(row_frame)
+        checkbox_frame.grid(row=0, column=len(self.headers) + 1, padx=5, pady=2, sticky='ew')
+        
+        completed_checkbox = ttkb.Checkbutton(
+            checkbox_frame,
+            variable=completed_var,
+            bootstyle="success-round-toggle"
+        )
+        completed_checkbox.pack(anchor='center')
+        completed_var.trace_add("write", self._on_data_changed)  # Add trace to track changes
 
     def clear_single_record(self, participant_id: str):
         """Clear a single participant record."""
@@ -277,6 +306,10 @@ class AlumnosTab(ttkb.Frame):
             
             # Reset chair to original position
             self.chair_vars[participant_id].set(participant_id)
+            
+            # Reset training completed checkbox
+            if participant_id in self.training_completed_vars:
+                self.training_completed_vars[participant_id].set(False)
             
             # Sort after clearing
             is_oi = participant_id.startswith("OI")
@@ -379,6 +412,11 @@ class AlumnosTab(ttkb.Frame):
                             self.participant_vars[participant_id][field_key].set(self.gender_options[-1])
                         else:
                             self.participant_vars[participant_id][field_key].set('')
+                # Load training completed status
+                training_completed = person_data.get('training_completed', False)
+                if participant_id in self.training_completed_vars:
+                    self.training_completed_vars[participant_id].set(training_completed)
+                
                 # Debug print for gender, mask, helmet
                 g = person_data.get('genero', None)
                 m = person_data.get('mask', None)
@@ -397,6 +435,9 @@ class AlumnosTab(ttkb.Frame):
             for field_key, var in fields_dict.items():
                 value = var.get().strip()
                 person_data[field_key] = value
+            # Add training completed status
+            if participant_id in self.training_completed_vars:
+                person_data['training_completed'] = self.training_completed_vars[participant_id].get()
             all_data[participant_id] = person_data
 
         session_id = self.data_manager.current_data.get('vuelo', {}).get('numero_entrenamiento', '')
@@ -458,6 +499,9 @@ class AlumnosTab(ttkb.Frame):
             # Reset chair to original position
             if participant_id in self.chair_vars:
                 self.chair_vars[participant_id].set(participant_id)
+            # Reset training completed checkbox
+            if participant_id in self.training_completed_vars:
+                self.training_completed_vars[participant_id].set(False)
         self.update_idletasks()
     
     def import_from_excel(self):

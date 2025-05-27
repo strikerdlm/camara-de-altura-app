@@ -618,6 +618,10 @@ class ExportarTab(ttk.Frame):
                         if isinstance(student_info, dict):
                             record = {'ID': student_id}
                             record.update(student_info)
+                            # Translate training_completed field for export
+                            if 'training_completed' in record:
+                                record['Termina entrenamiento'] = 'Sí' if record['training_completed'] else 'No'
+                                del record['training_completed']
                             records.append(record)
                     if records:
                         df_students = pd.DataFrame(records)
@@ -838,6 +842,10 @@ class ExportarTab(ttk.Frame):
                         if isinstance(student_info, dict):
                             record = {'ID': student_id}
                             record.update(student_info)
+                            # Translate training_completed field for export
+                            if 'training_completed' in record:
+                                record['Termina entrenamiento'] = 'Sí' if record['training_completed'] else 'No'
+                                del record['training_completed']
                             records.append(record)
                     if records:
                         df_students = pd.DataFrame(records)
@@ -1033,7 +1041,7 @@ class ExportarTab(ttk.Frame):
                 },
                 {
                     'title': 'Datos de Alumnos',
-                    'desc': 'A continuación se presenta la información de los participantes, incluyendo identificación, grado, nombre, edad, género, unidad, correo electrónico y equipo asignado.',
+                    'desc': 'A continuación se presenta la información de los participantes, incluyendo identificación, grado, nombre, edad, género, unidad, correo electrónico, equipo asignado y estado de finalización del entrenamiento.',
                     'data_func': lambda: self.data_manager.current_data.get('participantes') or self.data_manager.current_data.get('alumnos') or self.data_manager.current_data.get('alumnos_data'),
                     'table_func': None,
                     'columns': None
@@ -1131,6 +1139,10 @@ class ExportarTab(ttk.Frame):
                             if isinstance(student_info, dict):
                                 record = {'ID': student_id}
                                 record.update(student_info)
+                                # Translate training_completed field for export
+                                if 'training_completed' in record:
+                                    record['Termina entrenamiento'] = 'Sí' if record['training_completed'] else 'No'
+                                    del record['training_completed']
                                 records.append(record)
                         if records:
                             df = pd.DataFrame(records)
