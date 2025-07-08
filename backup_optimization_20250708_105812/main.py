@@ -449,44 +449,6 @@ def set_window_icon(window, force_refresh=False):
     # Return success status
     return success
 
-
-# Performance monitoring integration
-try:
-    from performance_monitor import performance_monitor, monitor_performance, track_operation
-    PERFORMANCE_MONITORING = True
-except ImportError:
-    print("Performance monitoring not available - continuing without it")
-    PERFORMANCE_MONITORING = False
-    def monitor_performance(name=None):
-        def decorator(func):
-            return func
-        return decorator
-    def track_operation(name):
-        class DummyTracker:
-            def __enter__(self): return self
-            def __exit__(self, *args): pass
-        return DummyTracker()
-
-
-
-@monitor_performance("async_tab_loading")
-def load_tab_async(tab_class, parent, data_manager, main_app):
-    """Load tab asynchronously to improve startup performance."""
-    import threading
-    
-    def load_in_background():
-        try:
-            tab = tab_class(parent, data_manager, main_app)
-            # Schedule UI update on main thread
-            parent.after(0, lambda: setattr(main_app, f'tab_{tab_class.__name__.lower()}', tab))
-        except Exception as e:
-            print(f"Error loading {tab_class.__name__}: {e}")
-    
-    thread = threading.Thread(target=load_in_background, daemon=True)
-    thread.start()
-    return thread
-
-
 class SplashScreen:
     def __init__(self, root, callback):
         self.root = root

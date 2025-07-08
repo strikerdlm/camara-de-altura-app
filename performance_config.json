@@ -1,0 +1,22 @@
+{
+    "monitoring": {
+        "enabled": true,
+        "sample_interval": 5,
+        "max_history": 1000
+    },
+    "caching": {
+        "enabled": true,
+        "max_cache_size": 128,
+        "cache_duration": 300
+    },
+    "ui": {
+        "lazy_loading": true,
+        "virtual_scrolling": true,
+        "async_loading": true
+    },
+    "data": {
+        "save_throttling": true,
+        "min_save_interval": 5,
+        "async_exports": true
+    }
+}
