@@ -22,96 +22,42 @@ class AboutTab(ttkb.Frame):
         self.create_widgets()
         
     def create_widgets(self):
-        """Create the tab UI widgets."""
-        # Configure grid for the main frame
+        """Create the tab UI widgets using pack for robust scrolling."""
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(0, weight=1)  # Main content will expand
+        self.rowconfigure(0, weight=1)
+
+        # ScrolledFrame to fill the entire tab.
+        scrolled_frame = ttkb.ScrolledFrame(self, autohide=True)
+        scrolled_frame.grid(row=0, column=0, sticky="nsew")
+
+        # The container inside the ScrolledFrame is what we add widgets to.
+        container = scrolled_frame.container
+
+        def create_section(parent, title, title_bootstyle="info"):
+            """Helper function to create a titled section frame."""
+            frame = ttkb.Frame(parent)
+            frame.pack(fill="x", expand=True, pady=(10, 5), padx=5)
+            
+            if title:
+                title_label = ttkb.Label(frame, text=title, font=('Segoe UI', 12, 'bold'), bootstyle=title_bootstyle)
+                title_label.pack(fill="x", pady=(0, 5))
+            
+            content_frame = ttkb.Frame(frame)
+            content_frame.pack(fill="x", expand=True, padx=10)
+            return content_frame
+
+        # --- App Header ---
+        header_content = create_section(container, title=None)
+        self.load_app_icon(header_content)
         
-        # Create a scrollable frame for content that takes the full tab
-        self.scrolled_frame = ttkb.ScrolledFrame(self, autohide=True, padding=20)
-        self.scrolled_frame.grid(row=0, column=0, sticky="nsew")
+        ttkb.Label(header_content, text="Registro Entrenamiento en Cámara de Altura", font=('Segoe UI', 16, 'bold'), bootstyle="primary").pack()
+        ttkb.Label(header_content, text="Sistema de Gestión de Datos para Entrenamientos de Hipoxia Hipobárica", font=('Segoe UI', 12), bootstyle="secondary", wraplength=600, justify=tk.CENTER).pack(pady=5)
+        ttkb.Label(header_content, text="Versión 1.0.4 (Julio 2025)", font=('Segoe UI', 12, 'bold'), bootstyle="info").pack(pady=2)
+        ttkb.Label(header_content, text="Fecha de lanzamiento: Enero 2025", font=('Segoe UI', 10), bootstyle="secondary").pack(pady=2)
+        ttkb.Separator(container).pack(fill="x", padx=20, pady=15)
         
-        # Main content container
-        main_container = ttkb.Frame(self.scrolled_frame.container)
-        main_container.pack(fill=tk.BOTH, expand=True)
-        main_container.columnconfigure(0, weight=1)
-        
-        # Current row for grid layout
-        current_row = 0
-        
-        # Header with padding to avoid overlap with tab navigation
-        header = ttkb.Label(
-            main_container,
-            text="Acerca de la aplicación",
-            font=('Segoe UI', 14, 'bold'),
-            bootstyle="primary"
-        )
-        header.grid(row=current_row, column=0, sticky="w", pady=(15, 20))
-        current_row += 1
-        
-        # Application icon at the top
-        self.load_app_icon(main_container, current_row)
-        current_row += 1
-        
-        # Application title
-        app_title = ttkb.Label(
-            main_container,
-            text="Registro Entrenamiento en Cámara de Altura",
-            font=('Segoe UI', 16, 'bold'),
-            bootstyle="primary"
-        )
-        app_title.grid(row=current_row, column=0, sticky="n", pady=10)
-        current_row += 1
-        
-        # Subtitle
-        subtitle = ttkb.Label(
-            main_container,
-            text="Sistema de Gestión de Datos para Entrenamientos de Hipoxia Hipobárica",
-            font=('Segoe UI', 12),
-            bootstyle="secondary",
-            wraplength=600
-        )
-        subtitle.grid(row=current_row, column=0, sticky="n", pady=5)
-        current_row += 1
-        
-        # Version
-        version_label = ttkb.Label(
-            main_container,
-            text="Versión 1.0.4",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        version_label.grid(row=current_row, column=0, sticky="n", pady=5)
-        current_row += 1
-        
-        # Release date
-        release_date = ttkb.Label(
-            main_container,
-            text="Fecha de lanzamiento: Enero 2025",
-            font=('Segoe UI', 10),
-            bootstyle="secondary"
-        )
-        release_date.grid(row=current_row, column=0, sticky="n", pady=5)
-        current_row += 1
-        
-        # Separator
-        separator = ttkb.Separator(main_container)
-        separator.grid(row=current_row, column=0, sticky="ew", pady=15)
-        current_row += 1
-        
-        # Application description
-        description_frame = ttkb.Frame(main_container)
-        description_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        description_frame.columnconfigure(0, weight=1)
-        
-        desc_title = ttkb.Label(
-            description_frame,
-            text="Descripción del Sistema",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        desc_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        # --- Description Section ---
+        desc_content = create_section(container, "Descripción del Sistema")
         desc_text = (
             "El Registro de Entrenamiento en Cámara de Altura es un sistema integral diseñado "
             "para gestionar y documentar los entrenamientos de hipoxia hipobárica realizados "
@@ -120,30 +66,10 @@ class AboutTab(ttkb.Frame):
             "y generación de reportes, garantizando la precisión y consistencia en la documentación "
             "de los entrenamientos aeromédicos."
         )
+        ttkb.Label(desc_content, text=desc_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
         
-        desc_label = ttkb.Label(
-            description_frame,
-            text=desc_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        desc_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Key features
-        features_frame = ttkb.Frame(main_container)
-        features_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        features_frame.columnconfigure(0, weight=1)
-        
-        features_title = ttkb.Label(
-            features_frame,
-            text="Características Principales",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        features_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        # --- Features Section ---
+        features_content = create_section(container, "Características Principales")
         features_text = (
             "• Gestión completa de datos de vuelo y participantes\n"
             "• Cronómetro integrado de alta precisión\n"
@@ -158,34 +84,12 @@ class AboutTab(ttkb.Frame):
             "• Soporte para múltiples tipos de entrenamientos\n"
             "• Registro de síntomas por participante"
         )
-        
-        features_label = ttkb.Label(
-            features_frame,
-            text=features_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        features_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Technical specifications
-        tech_frame = ttkb.Frame(main_container)
-        tech_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        tech_frame.columnconfigure(0, weight=1)
-        
-        tech_title = ttkb.Label(
-            tech_frame,
-            text="Especificaciones Técnicas",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        tech_title.grid(row=0, column=0, sticky="w", pady=5)
-        
-        # Get system information
+        ttkb.Label(features_content, text=features_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
+
+        # --- Technical Specifications Section ---
+        tech_content = create_section(container, "Especificaciones Técnicas")
         python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         platform_info = platform.platform()
-        
         tech_text = (
             f"• Lenguaje de programación: Python {python_version}\n"
             f"• Sistema operativo: {platform_info}\n"
@@ -197,63 +101,22 @@ class AboutTab(ttkb.Frame):
             "• Respaldo automático: Sistema de backup integrado\n"
             "• Logging: Sistema de registro de errores"
         )
-        
-        tech_label = ttkb.Label(
-            tech_frame,
-            text=tech_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        tech_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # System requirements
-        req_frame = ttkb.Frame(main_container)
-        req_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        req_frame.columnconfigure(0, weight=1)
-        
-        req_title = ttkb.Label(
-            req_frame,
-            text="Requisitos del Sistema",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        req_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        ttkb.Label(tech_content, text=tech_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
+
+        # --- System Requirements Section ---
+        req_content = create_section(container, "Requisitos del Sistema")
         req_text = (
             "• Windows 10 o superior\n"
             "• Python 3.8 o superior\n"
             "• Memoria RAM: 4 GB mínimo, 8 GB recomendado\n"
             "• Espacio en disco: 500 MB para la aplicación\n"
             "• Resolución de pantalla: 1024x768 mínimo\n"
-            "• Permisos de escritura en el directorio de instalación\n"
-            "• Conexión a internet para actualizaciones (opcional)"
+            "• Permisos de escritura en el directorio de instalación"
         )
-        
-        req_label = ttkb.Label(
-            req_frame,
-            text=req_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        req_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Development information
-        dev_info_frame = ttkb.Frame(main_container)
-        dev_info_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        dev_info_frame.columnconfigure(0, weight=1)
-        
-        dev_title = ttkb.Label(
-            dev_info_frame,
-            text="Información de Desarrollo",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        dev_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        ttkb.Label(req_content, text=req_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
+
+        # --- Development Info Section ---
+        dev_content = create_section(container, "Información de Desarrollo")
         dev_text = (
             "Este software ha sido desarrollado por la Subdirección Científica Aeroespacial "
             "de la Fuerza Aérea Colombiana en colaboración con el personal especializado "
@@ -261,17 +124,7 @@ class AboutTab(ttkb.Frame):
             "de ingeniería de software y los estándares de calidad requeridos para aplicaciones "
             "médicas y aeroespaciales."
         )
-        
-        dev_label = ttkb.Label(
-            dev_info_frame,
-            text=dev_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        dev_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        
-        # Development team
+        ttkb.Label(dev_content, text=dev_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True, pady=(0, 5))
         team_text = (
             "Equipo de desarrollo:\n"
             "• Desarrollador principal: Dr. Diego Malpica, Especialista en Medicina Aeroespacial\n"
@@ -279,161 +132,62 @@ class AboutTab(ttkb.Frame):
             "• Consultoría técnica: Subdirección Científica Aeroespacial\n"
             "• Pruebas y validación: Operadores de Cámara de Altura"
         )
-        
-        team_label = ttkb.Label(
-            dev_info_frame,
-            text=team_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        team_label.grid(row=2, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Repository link
-        repo_frame = ttkb.Frame(main_container)
-        repo_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        repo_frame.columnconfigure(0, weight=1)
-        
-        repo_title = ttkb.Label(
-            repo_frame,
-            text="Repositorio del Proyecto",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        repo_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        ttkb.Label(dev_content, text=team_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
+
+        # --- Repository Section ---
+        repo_content = create_section(container, "Repositorio del Proyecto")
         repo_link_text = "https://github.com/strikerdlm/camara-de-altura-app"
-        repo_link = ttkb.Label(
-            repo_frame,
-            text=repo_link_text,
-            font=('Segoe UI', 11, 'underline'),
-            foreground="blue",
-            cursor="hand2"
-        )
-        repo_link.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        
-        # Bind click event to open browser
+        repo_link = ttkb.Label(repo_content, text=repo_link_text, font=('Segoe UI', 11, 'underline'), foreground="blue", cursor="hand2")
+        repo_link.pack(fill="x", expand=True)
         repo_link.bind("<Button-1>", lambda e: webbrowser.open_new(repo_link_text))
-        
-        repo_info = ttkb.Label(
-            repo_frame,
-            text="Visite el repositorio para actualizaciones, documentación técnica y nuevas versiones.",
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        repo_info.grid(row=2, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Version history
-        version_frame = ttkb.Frame(main_container)
-        version_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        version_frame.columnconfigure(0, weight=1)
-        
-        version_title = ttkb.Label(
-            version_frame,
-            text="Historial de Versiones",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        version_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        repo_info = ttkb.Label(repo_content, text="Visite el repositorio para actualizaciones, documentación técnica y nuevas versiones.", font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT)
+        repo_info.pack(fill="x", expand=True, pady=(5, 0))
+
+        # --- Version History Section ---
+        version_content = create_section(container, "Historial de Versiones")
         version_history = (
             "• Versión 1.0.4 (Julio 2025):\n"
-            "  - Actualización completa de la pestaña 'Acerca de'\n"
-            "  - Información técnica detallada del sistema\n"
-            "  - Especificaciones de requisitos del sistema\n"
-            "  - Mejoras en la documentación de características\n"
-            "  - Optimización del rendimiento de la interfaz\n"
-            "  - Corrección de errores menores en cálculos de tiempo\n\n"
+            "  - Reestructuración completa de la pestaña 'Acerca de' para corregir error de scroll\n"
+            "  - Actualización de la información técnica y de desarrollo\n\n"
             "• Versión 1.0.3 (Diciembre 2024):\n"
             "  - Mejoras en la gestión de datos y funcionalidad de botones\n"
-            "  - Nuevo sistema de limpieza individual para registros de tiempo\n"
-            "  - Optimización del manejo de Observadores Internos (OI)\n"
-            "  - Implementación de guardado automático cada 10 segundos\n"
-            "  - Mejoras en cálculos de tiempos de vuelo y registro de eventos\n"
-            "  - Actualización de la interfaz para mejor organización visual\n"
-            "  - Nuevo selector para Director Médico con opciones predefinidas\n"
-            "  - Sistema mejorado de carga silenciosa de datos\n\n"
+            "  - Nuevo sistema de limpieza individual para registros de tiempo\n\n"
             "• Versión 1.0.2 (Noviembre 2024):\n"
             "  - Mejoras en la interfaz y nuevas funcionalidades\n"
-            "  - Implementación inicial del sistema de exportación\n"
-            "  - Optimización del manejo de datos de alumnos\n"
-            "  - Corrección de errores en el cronómetro\n"
-            "  - Mejoras en la validación de datos\n\n"
+            "  - Implementación inicial del sistema de exportación\n\n"
             "• Versión 1.0.1 (Octubre 2024):\n"
             "  - Corrección de errores críticos y optimizaciones\n"
-            "  - Mejoras en la estabilidad general del sistema\n"
-            "  - Implementación de sistema de respaldo automático\n"
-            "  - Corrección de problemas de memoria\n\n"
+            "  - Mejoras en la estabilidad general del sistema\n\n"
             "• Versión 1.0.0 (Agosto 2024):\n"
-            "  - Lanzamiento inicial de la aplicación\n"
-            "  - Funcionalidades básicas de registro y gestión\n"
-            "  - Interfaz de usuario básica\n"
-            "  - Sistema de cronómetro integrado\n"
-            "  - Registro básico de datos de vuelo"
+            "  - Lanzamiento inicial de la aplicación"
         )
-        
-        version_info = ttkb.Label(
-            version_frame,
-            text=version_history,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
-        )
-        version_info.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Support and contact
-        support_frame = ttkb.Frame(main_container)
-        support_frame.grid(row=current_row, column=0, sticky="ew", pady=10)
-        support_frame.columnconfigure(0, weight=1)
-        
-        support_title = ttkb.Label(
-            support_frame,
-            text="Soporte y Contacto",
-            font=('Segoe UI', 12, 'bold'),
-            bootstyle="info"
-        )
-        support_title.grid(row=0, column=0, sticky="w", pady=5)
-        
+        ttkb.Label(version_content, text=version_history, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
+
+        # --- Support Section ---
+        support_content = create_section(container, "Soporte y Contacto")
         support_text = (
-            "Para soporte técnico, reportes de errores o sugerencias de mejoras:\n\n"
+            "Para soporte técnico, reportes de errores o sugerencias de mejoras, contacte a:\n\n"
             "• Subdirección Científica Aeroespacial - Fuerza Aérea Colombiana\n"
             "• Personal de la Cámara de Altura\n"
-            "• Repositorio GitHub para issues técnicos\n\n"
-            "Este software está diseñado específicamente para el uso en las instalaciones "
-            "de la Cámara de Altura de la FAC y debe ser operado únicamente por personal "
-            "autorizado y debidamente capacitado."
+            "• Repositorio GitHub para issues técnicos"
         )
-        
-        support_label = ttkb.Label(
-            support_frame,
-            text=support_text,
-            font=('Segoe UI', 11),
-            wraplength=600,
-            justify=tk.LEFT
+        ttkb.Label(support_content, text=support_text, font=('Segoe UI', 11), wraplength=600, justify=tk.LEFT).pack(fill="x", expand=True)
+
+        # --- Copyright Section ---
+        copyright_frame = ttkb.Frame(container)
+        copyright_frame.pack(fill="x", expand=True, pady=(20, 10))
+        copyright_text = (
+            "© 2024-2025 Fuerza Aérea Colombiana - Subdirección Científica Aeroespacial.\n"
+            "Todos los derechos reservados."
         )
-        support_label.grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        current_row += 1
-        
-        # Copyright and legal
-        copyright_frame = ttkb.Frame(main_container)
-        copyright_frame.grid(row=current_row, column=0, sticky="ew", pady=15)
-        copyright_frame.columnconfigure(0, weight=1)
-        
-        copyright_info = ttkb.Label(
-            copyright_frame,
-            text="© 2024-2025 Fuerza Aérea Colombiana - Subdirección Científica Aeroespacial.\nTodos los derechos reservados.\n\nEste software es propiedad de la Fuerza Aérea Colombiana y está destinado\nexclusivamente para uso oficial en operaciones de entrenamiento aeromédico.",
-            font=('Segoe UI', 10),
-            wraplength=600,
-            justify=tk.CENTER,
-            bootstyle="secondary"
+        ttkb.Label(copyright_frame, text=copyright_text, font=('Segoe UI', 10), bootstyle="secondary", justify=tk.CENTER).pack(pady=5)
+        disclaimer_text = (
+            "Este software es propiedad de la Fuerza Aérea Colombiana y está destinado\n"
+            "exclusivamente para uso oficial en operaciones de entrenamiento aeromédico."
         )
-        copyright_info.grid(row=0, column=0, pady=20)
-        
-    def load_app_icon(self, parent, row):
+        ttkb.Label(copyright_frame, text=disclaimer_text, font=('Segoe UI', 9), bootstyle="secondary", justify=tk.CENTER).pack()
+    
+    def load_app_icon(self, parent):
         """Load and display the application icon."""
         try:
             # Get the path to the icon image
@@ -448,31 +202,17 @@ class AboutTab(ttkb.Frame):
                 self.icon_photo = ImageTk.PhotoImage(icon_img)
                 
                 # Create and place the image label
-                icon_label = ttkb.Label(
-                    parent,
-                    image=self.icon_photo,
-                    bootstyle="light"
-                )
-                icon_label.grid(row=row, column=0, pady=15)
+                icon_label = ttkb.Label(parent, image=self.icon_photo, bootstyle="light")
+                icon_label.pack(pady=(5, 10))
             else:
                 # Fallback if icon not found
-                icon_placeholder = ttkb.Label(
-                    parent,
-                    text="📊",
-                    font=('Segoe UI', 48),
-                    bootstyle="light"
-                )
-                icon_placeholder.grid(row=row, column=0, pady=15)
+                icon_placeholder = ttkb.Label(parent, text="📊", font=('Segoe UI', 48), bootstyle="light")
+                icon_placeholder.pack(pady=(5, 10))
         except Exception as e:
             print(f"Error loading icon: {e}")
             # Fallback emoji icon
-            icon_placeholder = ttkb.Label(
-                parent,
-                text="📊",
-                font=('Segoe UI', 48),
-                bootstyle="light"
-            )
-            icon_placeholder.grid(row=row, column=0, pady=15)
+            icon_placeholder = ttkb.Label(parent, text="📊", font=('Segoe UI', 48), bootstyle="light")
+            icon_placeholder.pack(pady=(5, 10))
     
     def load_data(self):
         """Empty implementation to conform to tab interface pattern."""
