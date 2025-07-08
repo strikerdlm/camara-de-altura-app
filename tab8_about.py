@@ -40,14 +40,15 @@ class AboutTab(ttkb.Frame):
         content_frame = ttkb.Frame(self)
         content_frame.grid(row=1, column=0, sticky="nsew")
         content_frame.columnconfigure(0, weight=1)
+        content_frame.rowconfigure(0, weight=1)
         
         # Create a scrollable frame for content
-        scrolled_frame = ttkb.ScrolledFrame(content_frame)
-        scrolled_frame.pack(fill=tk.BOTH, expand=True)
+        self.scrolled_frame = ttkb.ScrolledFrame(content_frame, autohide=True)
+        self.scrolled_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         
         # Main content container
-        main_container = ttkb.Frame(scrolled_frame.container, padding=20)
-        main_container.pack(fill=tk.BOTH, expand=True)
+        main_container = ttkb.Frame(self.scrolled_frame.container, padding=20)
+        main_container.pack(fill=tk.X, anchor="n")
         main_container.columnconfigure(0, weight=1)
         
         # Current row for grid layout
@@ -436,6 +437,19 @@ class AboutTab(ttkb.Frame):
             bootstyle="secondary"
         )
         copyright_info.grid(row=0, column=0, pady=20)
+        
+        # Update scroll region after all content is loaded
+        self.after(100, self.update_scroll_region)
+        
+    def update_scroll_region(self):
+        """Update the scroll region to ensure proper scrolling."""
+        try:
+            # Update the scrolled frame to recalculate the scroll region
+            self.update_idletasks()
+            if hasattr(self, 'scrolled_frame'):
+                self.scrolled_frame.update_idletasks()
+        except Exception as e:
+            print(f"Error updating scroll region: {e}")
         
     def load_app_icon(self, parent, row):
         """Load and display the application icon."""
