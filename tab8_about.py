@@ -344,7 +344,7 @@ class AboutTab(ttkb.Frame):
         version_title.grid(row=0, column=0, sticky="w", pady=5)
         
         version_history = (
-            "• Versión 1.0.4 (Enero 2025):\n"
+            "• Versión 1.0.4 (Julio 2025):\n"
             "  - Actualización completa de la pestaña 'Acerca de'\n"
             "  - Información técnica detallada del sistema\n"
             "  - Especificaciones de requisitos del sistema\n"
