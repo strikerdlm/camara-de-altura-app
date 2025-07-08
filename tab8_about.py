@@ -25,34 +25,29 @@ class AboutTab(ttkb.Frame):
         """Create the tab UI widgets."""
         # Configure grid for the main frame
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)  # Main content will expand
+        self.rowconfigure(0, weight=1)  # Main content will expand
         
-        # Header with padding to avoid overlap with tab navigation
-        header = ttkb.Label(
-            self,
-            text="Acerca de la aplicación",
-            font=('Segoe UI', 14, 'bold'),
-            bootstyle="primary"
-        )
-        header.grid(row=0, column=0, sticky="w", pady=(15, 20))
-        
-        # Main content frame with scrolling capability
-        content_frame = ttkb.Frame(self)
-        content_frame.grid(row=1, column=0, sticky="nsew")
-        content_frame.columnconfigure(0, weight=1)
-        content_frame.rowconfigure(0, weight=1)
-        
-        # Create a scrollable frame for content
-        self.scrolled_frame = ttkb.ScrolledFrame(content_frame, autohide=True)
-        self.scrolled_frame.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # Create a scrollable frame for content that takes the full tab
+        self.scrolled_frame = ttkb.ScrolledFrame(self, autohide=True, padding=20)
+        self.scrolled_frame.grid(row=0, column=0, sticky="nsew")
         
         # Main content container
-        main_container = ttkb.Frame(self.scrolled_frame.container, padding=20)
-        main_container.pack(fill=tk.X, anchor="n")
+        main_container = ttkb.Frame(self.scrolled_frame.container)
+        main_container.pack(fill=tk.BOTH, expand=True)
         main_container.columnconfigure(0, weight=1)
         
         # Current row for grid layout
         current_row = 0
+        
+        # Header with padding to avoid overlap with tab navigation
+        header = ttkb.Label(
+            main_container,
+            text="Acerca de la aplicación",
+            font=('Segoe UI', 14, 'bold'),
+            bootstyle="primary"
+        )
+        header.grid(row=current_row, column=0, sticky="w", pady=(15, 20))
+        current_row += 1
         
         # Application icon at the top
         self.load_app_icon(main_container, current_row)
@@ -437,19 +432,6 @@ class AboutTab(ttkb.Frame):
             bootstyle="secondary"
         )
         copyright_info.grid(row=0, column=0, pady=20)
-        
-        # Update scroll region after all content is loaded
-        self.after(100, self.update_scroll_region)
-        
-    def update_scroll_region(self):
-        """Update the scroll region to ensure proper scrolling."""
-        try:
-            # Update the scrolled frame to recalculate the scroll region
-            self.update_idletasks()
-            if hasattr(self, 'scrolled_frame'):
-                self.scrolled_frame.update_idletasks()
-        except Exception as e:
-            print(f"Error updating scroll region: {e}")
         
     def load_app_icon(self, parent, row):
         """Load and display the application icon."""
