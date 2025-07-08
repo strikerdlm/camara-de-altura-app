@@ -12,36 +12,6 @@ from datetime import datetime
 from ttkbootstrap.scrolled import ScrolledFrame
 import inspect
 
-
-class LazyCombobox:
-    """Lazy loading combobox wrapper."""
-    
-    def __init__(self, parent, values_func, **kwargs):
-        try:
-            import ttkbootstrap as ttkb
-            self.widget = ttkb.Combobox(parent, **kwargs)
-        except ImportError:
-            import tkinter.ttk as ttk
-            self.widget = ttk.Combobox(parent, **kwargs)
-        
-        self.values_func = values_func
-        self.loaded = False
-        self.widget.bind('<Button-1>', self._load_values)
-    
-    def _load_values(self, event=None):
-        if not self.loaded:
-            values = self.values_func()
-            self.widget['values'] = values
-            self.loaded = True
-    
-    def __getattr__(self, name):
-        return getattr(self.widget, name)
-
-def create_optimized_combobox(parent, values_func, **kwargs):
-    """Create an optimized combobox with lazy loading."""
-    return LazyCombobox(parent, values_func, **kwargs)
-
-
 class VueloTab(ttkb.Frame):
     """Tab for managing flight data."""
     
