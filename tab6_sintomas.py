@@ -292,7 +292,8 @@ class SintomasTab(ttkb.Frame):
             "Falsa Sensación de Bienestar", "Falta de aire", 
             "Hormigueo", "Irritabilidad", "Lentitud para pensar", 
             "Mareo", "Nauseas", "Palpitaciones", 
-            "Pérdida de consciencia", "Reducción de fuerza",
+            "Pérdida de consciencia", "Reducción de concentración", 
+            "Reducción de coordinación", "Reducción de fuerza",
             "Reducción de memoria", "Sensación de calor / frío", 
             "Sobreconfianza", "Sudoración", "Sueño", "Temblor", 
             "Visión borrosa", "Otro"
