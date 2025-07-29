@@ -4,12 +4,9 @@
 import tkinter as tk
 import ttkbootstrap as ttkb
 from tkinter import messagebox
-from typing import Dict, Any
 import json
 import os
-import locale
 from datetime import datetime
-from ttkbootstrap.scrolled import ScrolledFrame
 import inspect
 
 
@@ -133,13 +130,18 @@ class VueloTab(ttkb.Frame):
         main_content_frame.columnconfigure(0, weight=1)
         main_content_frame.rowconfigure(0, weight=1)
         
-        # Create a canvas with scrollbars for the main content instead of using ScrolledFrame
+        # Create canvas with scrollbars for main content
         main_canvas = tk.Canvas(main_content_frame)
-        y_scrollbar = ttkb.Scrollbar(main_content_frame, orient="vertical", command=main_canvas.yview)
-        x_scrollbar = ttkb.Scrollbar(main_content_frame, orient="horizontal", command=main_canvas.xview)
+        y_scrollbar = ttkb.Scrollbar(main_content_frame, 
+                                     orient="vertical", 
+                                     command=main_canvas.yview)
+        x_scrollbar = ttkb.Scrollbar(main_content_frame, 
+                                     orient="horizontal", 
+                                     command=main_canvas.xview)
         
         # Configure the canvas scrolling
-        main_canvas.configure(yscrollcommand=y_scrollbar.set, xscrollcommand=x_scrollbar.set)
+        main_canvas.configure(yscrollcommand=y_scrollbar.set, 
+                              xscrollcommand=x_scrollbar.set)
         
         # Grid layout for canvas and scrollbars
         main_canvas.grid(row=0, column=0, sticky="nsew")
@@ -201,7 +203,7 @@ class VueloTab(ttkb.Frame):
         
         # -- Row 0 --
         # Fecha del entrenamiento (moved to first row in main form)
-        date_entry = self._create_field(self.main_frame, current_row, 0, "Fecha del entrenamiento:", "fecha", width=15)
+        self._create_field(self.main_frame, current_row, 0, "Fecha del entrenamiento:", "fecha", width=15)
         
         # Add a small instruction label about date format right next to the entry field
         format_label = ttkb.Label(
@@ -905,80 +907,116 @@ class VueloTab(ttkb.Frame):
         self.update_idletasks()
     
     def load_training_archives(self):
-        """Load saved training archives from JSON file(s) in data/.
-           Primarily looks for current_session.json and treats it as an archive item.
+        """Load saved training archives from JSON file(s) in data/archives/.
+           Load from training_archives.json where all archived sessions are stored.
         """
         self.training_archives = {} # Clear existing in-memory archives
         print("VueloTab: Cleared in-memory training_archives.")
 
         try:
-            # Define the path to current_session.json directly in the data directory
+            # Load from the main training archives file where all sessions are stored
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            # Assuming tab1_vuelo.py is in the project root, so data/ is a subdirectory
-            # If tab1_vuelo.py is itself in a subdirectory, adjust os.path.dirname count
+            archives_dir = os.path.join(base_dir, 'data', 'archives')
+            training_archives_file_path = os.path.join(archives_dir, 'training_archives.json')
+
+            print(f"VueloTab: Attempting to load archives from: {training_archives_file_path}")
+
+            if os.path.exists(training_archives_file_path):
+                with open(training_archives_file_path, 'r', encoding='utf-8') as f:
+                    archived_sessions = json.load(f)
+                print(f"VueloTab: Successfully loaded and parsed {training_archives_file_path}")
+
+                # Load each archived session into self.training_archives
+                for training_id, session_data in archived_sessions.items():
+                    fecha = session_data.get('fecha', 'Fecha Desconocida')
+                    vuelo_del_ano = session_data.get('vuelo_del_ano', 'N/A')
+                    vuelo_total = session_data.get('vuelo_total', 'N/A')
+                    numero_entrenamiento = session_data.get('numero_entrenamiento', '')
+                    operador_camara = session_data.get('operador_camara', '')
+                    timestamp = session_data.get('timestamp', '')
+                    
+                    # Create display name for this archive entry
+                    display_name = f"Fecha: {fecha} | Entrenamiento: #{vuelo_del_ano}"
+                    if vuelo_total and vuelo_total != 'N/A':
+                        display_name += f" | Total: #{vuelo_total}"
+                    if operador_camara:
+                        display_name += f" | Op. Cámara: {operador_camara}"
+
+                    self.training_archives[training_id] = {
+                        'fecha': fecha,
+                        'vuelo_del_ano': vuelo_del_ano,
+                        'vuelo_total': vuelo_total,
+                        'numero_entrenamiento': numero_entrenamiento,
+                        'operador_camara': operador_camara,
+                        'timestamp': timestamp,
+                        'source_file': 'training_archives.json',
+                        'display_name': display_name,
+                        'full_data': session_data  # Store complete session data for loading
+                    }
+                    print(f"VueloTab: Added '{training_id}' to in-memory training_archives.")
+
+            else:
+                print(f"VueloTab: Archive file not found: {training_archives_file_path}. No archives loaded.")
+                # self.training_archives remains empty
+            
+            # Also load the current session if it exists and add it to the list
             data_dir = os.path.join(base_dir, 'data')
             current_session_file_path = os.path.join(data_dir, 'current_session.json')
-
-            print(f"VueloTab: Attempting to load archive from: {current_session_file_path}")
-
-            if os.path.exists(current_session_file_path):
-                with open(current_session_file_path, 'r', encoding='utf-8') as f:
-                    session_data = json.load(f)
-                print(f"VueloTab: Successfully loaded and parsed {current_session_file_path}")
-
-                # Extract necessary info to display this session in the archive list
-                datos_vuelo = session_data.get('datos_vuelo', {})
-                fecha = datos_vuelo.get('fecha', 'Fecha Desconocida')
-                vuelo_del_ano = datos_vuelo.get('vuelo_del_ano', 'N/A')
-                
-                # Create a unique ID for this archive entry
-                # If datos_vuelo has numero_entrenamiento, use that, otherwise create one.
-                training_id = datos_vuelo.get('numero_entrenamiento')
-                if not training_id:
-                    year_suffix = 'XX' # Default if date parsing fails
-                    if fecha != 'Fecha Desconocida':
-                        try:
-                            date_obj = datetime.strptime(fecha, "%d-%m-%Y") # Assuming DD-MM-YYYY
-                            year_suffix = date_obj.strftime("%y")
-                        except ValueError:
-                            try: 
-                                date_obj = datetime.strptime(fecha, "%d/%m/%Y")
-                                year_suffix = date_obj.strftime("%y")
-                            except ValueError:
-                                 print(f"VueloTab: Could not parse date '{fecha}' to get year for training_id.")
-                    training_id = f"{vuelo_del_ano}-{year_suffix}_current_session"
-                else:
-                    training_id = f"{training_id}_current_session" # Ensure it's unique if it might clash
-
-
-                self.training_archives[training_id] = {
-                    'fecha': fecha,
-                    'vuelo_del_ano': vuelo_del_ano,
-                    'source_file': 'current_session.json', # Mark its origin
-                    'display_name': f"Sesión Actual Guardada ({fecha} - Vuelo {vuelo_del_ano})",
-                    'numero_entrenamiento': datos_vuelo.get('numero_entrenamiento') # Store original if present
-                }
-                print(f"VueloTab: Added '{training_id}' to in-memory training_archives.")
-            else:
-                print(f"VueloTab: Archive file not found: {current_session_file_path}. No archives loaded from it.")
-                # self.training_archives remains empty or only contains other sources if any were added
             
-            # Refresh the UI list based on what was found (or not found)
+            if os.path.exists(current_session_file_path):
+                try:
+                    with open(current_session_file_path, 'r', encoding='utf-8') as f:
+                        current_session_data = json.load(f)
+                    
+                    datos_vuelo = current_session_data.get('datos_vuelo', {})
+                    fecha = datos_vuelo.get('fecha', 'Fecha Desconocida')
+                    vuelo_del_ano = datos_vuelo.get('vuelo_del_ano', 'N/A')
+                    numero_entrenamiento = datos_vuelo.get('numero_entrenamiento', '')
+                    
+                    # Create unique ID for current session that won't conflict with archives
+                    current_session_id = f"CURRENT_{fecha}_{vuelo_del_ano}"
+                    
+                    # Only add if this session is not already in archives
+                    session_in_archives = False
+                    for archive_id, archive_data in self.training_archives.items():
+                        if (archive_data.get('fecha') == fecha and 
+                            archive_data.get('vuelo_del_ano') == vuelo_del_ano):
+                            session_in_archives = True
+                            break
+                    
+                    if not session_in_archives:
+                        self.training_archives[current_session_id] = {
+                            'fecha': fecha,
+                            'vuelo_del_ano': vuelo_del_ano,
+                            'vuelo_total': datos_vuelo.get('vuelo_total', 'N/A'),
+                            'numero_entrenamiento': numero_entrenamiento,
+                            'operador_camara': datos_vuelo.get('operador_camara', ''),
+                            'timestamp': current_session_data.get('last_saved', ''),
+                            'source_file': 'current_session.json',
+                            'display_name': f"Sesión Actual ({fecha} - Vuelo #{vuelo_del_ano})",
+                            'full_data': current_session_data
+                        }
+                        print(f"VueloTab: Added current session '{current_session_id}' to training_archives.")
+                
+                except json.JSONDecodeError as e_json:
+                    print(f"VueloTab: Error loading current session: {e_json}")
+            
+            # Refresh the UI list based on what was found
             if hasattr(self, 'trainings_container'):
                 self.refresh_training_list()
                 
         except json.JSONDecodeError as e_json:
-            print(f"VueloTab: Error decoding JSON from {current_session_file_path}: {e_json}")
+            print(f"VueloTab: Error decoding JSON from {training_archives_file_path}: {e_json}")
             messagebox.showerror("Error de Archivo", 
-                                 f"El archivo 'current_session.json' está corrupto o no es un JSON válido.\n"
-                                 f"Verifique el archivo en la carpeta 'data'.\nDetalle: {e_json}", parent=self)
+                                 f"El archivo de archivos de entrenamiento está corrupto o no es un JSON válido.\n"
+                                 f"Verifique el archivo en la carpeta 'data/archives'.\nDetalle: {e_json}", parent=self)
             self.training_archives = {} # Reset to empty on error
             if hasattr(self, 'trainings_container'):
                 self.refresh_training_list()
         except Exception as e:
             print(f"VueloTab: General error loading training archives: {e}")
             messagebox.showerror("Error de Carga", 
-                                 f"No se pudieron cargar los archivos de entrenamiento desde 'data/current_session.json'.\nDetalle: {e}", parent=self)
+                                 f"No se pudieron cargar los archivos de entrenamiento desde 'data/archives/training_archives.json'.\nDetalle: {e}", parent=self)
             self.training_archives = {} # Reset to empty on error
             if hasattr(self, 'trainings_container'):
                 self.refresh_training_list()
@@ -1273,8 +1311,8 @@ class VueloTab(ttkb.Frame):
 
         confirm = messagebox.askyesno(
             "Confirmar Carga de Entrenamiento",
-            "ADVERTENCIA: Esta acción reemplazará todos los datos de la sesión actual en todas las pestañas con los datos del entrenamiento seleccionado."
-            "Los cambios NO se guardarán permanentemente en el archivo de configuración principal (current_data.json) hasta que usted presione 'Guardar Datos' explícitamente en alguna pestaña."
+            "ADVERTENCIA: Esta acción reemplazará todos los datos de la sesión actual en todas las pestañas con los datos del entrenamiento seleccionado.\n\n"
+            "Los cambios NO se guardarán permanentemente en el archivo de configuración principal (current_data.json) hasta que usted presione 'Guardar Datos' explícitamente en alguna pestaña.\n\n"
             "¿Desea continuar y cargar el entrenamiento en su sesión de trabajo actual?",
             icon="warning",
             parent=self
@@ -1291,10 +1329,11 @@ class VueloTab(ttkb.Frame):
         actual_session_id_for_datamanager = None
 
         if source_file == 'current_session.json':
-            print(f"VueloTab: Loading from source file: {source_file}")
+            print(f"VueloTab: Loading from current session file")
+            # Load from current_session.json
             base_dir = os.path.dirname(os.path.abspath(__file__))
             data_dir = os.path.join(base_dir, 'data')
-            file_to_load_path = os.path.join(data_dir, source_file)
+            file_to_load_path = os.path.join(data_dir, 'current_session.json')
             
             if os.path.exists(file_to_load_path):
                 try:
@@ -1311,59 +1350,145 @@ class VueloTab(ttkb.Frame):
                     self.data_manager.current_data['reactions_data'] = loaded_json_data.get('reactions_data', [])
                     self.data_manager.current_data['student_symptoms'] = loaded_json_data.get('student_symptoms', {})
                     self.data_manager.current_data['displayed_calculated_totals'] = loaded_json_data.get('displayed_calculated_totals', {})
-                    # Ensure 'sessions_data' exists, though it might be empty after clear_data()
-                    self.data_manager.current_data.setdefault('sessions_data', {}) 
-
-                    # Determine/ensure numero_entrenamiento (session_id for DataManager)
-                    vuelo_data = self.data_manager.current_data['vuelo']
-                    actual_session_id_for_datamanager = vuelo_data.get('numero_entrenamiento')
-                    if not actual_session_id_for_datamanager:
-                        vuelo_del_ano = vuelo_data.get('vuelo_del_ano', 'N/A')
-                        fecha_str = vuelo_data.get('fecha', '')
-                        year_suffix = 'XX'
-                        if fecha_str:
-                            try:
-                                date_obj = datetime.strptime(fecha_str, "%d-%m-%Y")
-                                year_suffix = date_obj.strftime("%y")
-                            except ValueError:
-                                try: 
-                                    date_obj = datetime.strptime(fecha_str, "%d/%m/%Y")
-                                    year_suffix = date_obj.strftime("%y")
-                                except ValueError:
-                                     print(f"VueloTab: Could not parse date '{fecha_str}' from loaded vuelo_data.")
-                        actual_session_id_for_datamanager = f"{vuelo_del_ano}-{year_suffix}"
-                        vuelo_data['numero_entrenamiento'] = actual_session_id_for_datamanager
                     
-                    # If a session ID was determined, place this loaded data into current_data.sessions_data[session_id]
-                    if actual_session_id_for_datamanager:
-                        snapshot_of_loaded_data = {
-                            'vuelo': self.data_manager.current_data['vuelo'],
-                            'participantes': self.data_manager.current_data['participantes'],
-                            'event_times': self.data_manager.current_data['event_times'],
-                            'student_hypoxia_end_times': self.data_manager.current_data['student_hypoxia_end_times'],
-                            'rd': self.data_manager.current_data['rd'],
-                            'reactions_data': self.data_manager.current_data['reactions_data'],
-                            'student_symptoms': self.data_manager.current_data['student_symptoms'],
-                            'displayed_calculated_totals': self.data_manager.current_data['displayed_calculated_totals']
-                        }
-                        self.data_manager.current_data['sessions_data'][actual_session_id_for_datamanager] = snapshot_of_loaded_data
-                        print(f"VueloTab: Populated sessions_data for ID '{actual_session_id_for_datamanager}'")
-
                     loaded_successfully = True
-                except json.JSONDecodeError as e_json:
-                    messagebox.showerror("Error de Carga", f"No se pudo decodificar el archivo JSON: {file_to_load_path}.\\nDetalle: {e_json}", parent=self)
                 except Exception as e_load:
-                    messagebox.showerror("Error de Carga", f"Error al cargar el archivo: {file_to_load_path}.\\nDetalle: {e_load}", parent=self)
+                    messagebox.showerror("Error de Carga", f"Error al cargar el archivo: {file_to_load_path}.\nDetalle: {e_load}", parent=self)
             else:
                 messagebox.showerror("Error de Carga", f"El archivo de sesión especificado no existe: {file_to_load_path}", parent=self)
+                
+        elif source_file == 'training_archives.json':
+            print(f"VueloTab: Loading from archived session")
+            # Load from archived session data stored in self.training_archives
+            try:
+                # Get the full session data from the archive entry
+                archived_data = archive_entry_info.get('full_data', {})
+                
+                # Map archived session data to DataManager.current_data structure
+                self.data_manager.current_data['vuelo'] = {
+                    'fecha': archived_data.get('fecha', ''),
+                    'vuelo_del_ano': archived_data.get('vuelo_del_ano', ''),
+                    'vuelo_total': archived_data.get('vuelo_total', ''),
+                    'numero_entrenamiento': archived_data.get('numero_entrenamiento', ''),
+                    'curso': archived_data.get('curso', ''),
+                    'operador_camara': archived_data.get('operador_camara', ''),
+                    'operador_rd': archived_data.get('operador_rd', ''),
+                    'lector': archived_data.get('lector', ''),
+                    'observador_registro': archived_data.get('observador_registro', ''),
+                    'perfil_camara': archived_data.get('perfil_camara', ''),
+                    'alumnos': archived_data.get('alumnos', ''),
+                    'director_medico': archived_data.get('director_medico', ''),
+                    'oe_4': archived_data.get('oe_4', ''),
+                    'jefe_tecnico': archived_data.get('jefe_tecnico', ''),
+                    'oe_5': archived_data.get('oe_5', ''), 
+                    'observaciones': archived_data.get('observaciones', ''),
+                    'hora_inicio': archived_data.get('hora_inicio', ''),
+                    'hora_fin': archived_data.get('hora_fin', ''),
+                    'tipo_vuelo': archived_data.get('tipo_vuelo', ''),
+                    'altura_inicial': archived_data.get('altura_inicial', ''),
+                    'altura_final': archived_data.get('altura_final', ''),
+                    'tiempo_ascenso': archived_data.get('tiempo_ascenso', ''),
+                    'tiempo_estadia': archived_data.get('tiempo_estadia', ''),
+                    'tiempo_descenso': archived_data.get('tiempo_descenso', ''),
+                    'tiempo_total': archived_data.get('tiempo_total', ''),
+                    'piloto_nombre': archived_data.get('piloto_nombre', ''),
+                    'piloto_grado': archived_data.get('piloto_grado', ''),
+                    'piloto_unidad': archived_data.get('piloto_unidad', ''),
+                    'operador_nombre': archived_data.get('operador_nombre', ''),
+                    'operador_grado': archived_data.get('operador_grado', ''),
+                    'operador_unidad': archived_data.get('operador_unidad', '')
+                }
+                
+                # Try to load additional data from training_full_data.json if available
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                archives_dir = os.path.join(base_dir, 'data', 'archives')
+                full_data_file = os.path.join(archives_dir, 'training_full_data.json')
+                
+                if os.path.exists(full_data_file):
+                    try:
+                        with open(full_data_file, 'r', encoding='utf-8') as f:
+                            all_training_data = json.load(f)
+                            
+                        if training_id in all_training_data:
+                            full_data = all_training_data[training_id]
+                            # Load additional data from full training data
+                            self.data_manager.current_data['participantes'] = full_data.get('participantes', {})
+                            self.data_manager.current_data['event_times'] = full_data.get('event_times', {})
+                            self.data_manager.current_data['student_hypoxia_end_times'] = full_data.get('student_hypoxia_end_times', {})
+                            self.data_manager.current_data['rd'] = full_data.get('rd', {})
+                            self.data_manager.current_data['reactions_data'] = full_data.get('reactions_data', [])
+                            self.data_manager.current_data['student_symptoms'] = full_data.get('student_symptoms', {})
+                            self.data_manager.current_data['displayed_calculated_totals'] = full_data.get('displayed_calculated_totals', {})
+                            print(f"VueloTab: Loaded additional data from training_full_data.json for {training_id}")
+                    except Exception as e_full:
+                        print(f"VueloTab: Could not load full data for {training_id}: {e_full}")
+                        # Continue with basic data if full data fails
+                        self.data_manager.current_data['participantes'] = {}
+                        self.data_manager.current_data['event_times'] = {}
+                        self.data_manager.current_data['student_hypoxia_end_times'] = {}
+                        self.data_manager.current_data['rd'] = {}
+                        self.data_manager.current_data['reactions_data'] = []
+                        self.data_manager.current_data['student_symptoms'] = {}
+                        self.data_manager.current_data['displayed_calculated_totals'] = {}
+                else:
+                    # Initialize empty structures if no full data file
+                    self.data_manager.current_data['participantes'] = {}
+                    self.data_manager.current_data['event_times'] = {}
+                    self.data_manager.current_data['student_hypoxia_end_times'] = {}
+                    self.data_manager.current_data['rd'] = {}
+                    self.data_manager.current_data['reactions_data'] = []
+                    self.data_manager.current_data['student_symptoms'] = {}
+                    self.data_manager.current_data['displayed_calculated_totals'] = {}
+                
+                loaded_successfully = True
+                print(f"VueloTab: Successfully loaded archived session data for {training_id}")
+                
+            except Exception as e_archived:
+                messagebox.showerror("Error de Carga", f"Error al cargar los datos archivados para ID: {training_id}.\nDetalle: {e_archived}", parent=self)
         else:
-            # This branch would be for the old archive system, which is likely not being populated if data/archives is empty.
-            # Fallback or error if training_id is not from current_session.json
-            messagebox.showerror("Error de Carga", f"Tipo de archivo de origen no reconocido o no implementado para ID: {training_id}", parent=self)
-            return # Exit if not loading from current_session.json for now
+            messagebox.showerror("Error de Carga", f"Tipo de archivo de origen no reconocido: {source_file} para ID: {training_id}", parent=self)
+            return
 
         if loaded_successfully:
-            # Update VueloTab's own UI fields (self.variables) from the newly populated self.data_manager.current_data['vuelo']
+            # Ensure sessions_data structure exists
+            self.data_manager.current_data.setdefault('sessions_data', {}) 
+            
+            # Determine session ID for DataManager
+            vuelo_data = self.data_manager.current_data.get('vuelo', {})
+            actual_session_id_for_datamanager = vuelo_data.get('numero_entrenamiento')
+            if not actual_session_id_for_datamanager:
+                vuelo_del_ano = vuelo_data.get('vuelo_del_ano', 'N/A')
+                fecha_str = vuelo_data.get('fecha', '')
+                year_suffix = 'XX'
+                if fecha_str:
+                    try:
+                        date_obj = datetime.strptime(fecha_str, "%d-%m-%Y")
+                        year_suffix = date_obj.strftime("%y")
+                    except ValueError:
+                        try: 
+                            date_obj = datetime.strptime(fecha_str, "%d/%m/%Y")
+                            year_suffix = date_obj.strftime("%y")
+                        except ValueError:
+                             print(f"VueloTab: Could not parse date '{fecha_str}' from loaded vuelo_data.")
+                actual_session_id_for_datamanager = f"{vuelo_del_ano}-{year_suffix}"
+                vuelo_data['numero_entrenamiento'] = actual_session_id_for_datamanager
+            
+            # Place this loaded data into current_data.sessions_data[session_id]
+            if actual_session_id_for_datamanager:
+                snapshot_of_loaded_data = {
+                    'vuelo': self.data_manager.current_data['vuelo'],
+                    'participantes': self.data_manager.current_data['participantes'],
+                    'event_times': self.data_manager.current_data['event_times'],
+                    'student_hypoxia_end_times': self.data_manager.current_data['student_hypoxia_end_times'],
+                    'rd': self.data_manager.current_data['rd'],
+                    'reactions_data': self.data_manager.current_data['reactions_data'],
+                    'student_symptoms': self.data_manager.current_data['student_symptoms'],
+                    'displayed_calculated_totals': self.data_manager.current_data['displayed_calculated_totals']
+                }
+                self.data_manager.current_data['sessions_data'][actual_session_id_for_datamanager] = snapshot_of_loaded_data
+                print(f"VueloTab: Populated sessions_data for ID '{actual_session_id_for_datamanager}'")
+
+            # Update VueloTab's own UI fields from the newly populated data
             vuelo_data_for_ui = self.data_manager.current_data.get('vuelo', {})
             for field_name, var_tk in self.variables.items():
                 var_tk.set(vuelo_data_for_ui.get(field_name, ''))
@@ -1381,9 +1506,10 @@ class VueloTab(ttkb.Frame):
             
             messagebox.showinfo(
                 "Carga Completada en Sesión Actual",
-                "El entrenamiento ha sido cargado en su sesión de trabajo actual desde 'current_session.json'."
-                "Revise los datos en todas las pestañas."
-                "Para hacer estos cambios permanentes en el archivo de configuración principal (current_data.json), presione 'Guardar Datos' en la pestaña correspondiente.",
+                f"El entrenamiento ha sido cargado exitosamente en su sesión de trabajo actual.\n\n"
+                f"Datos cargados desde: {source_file}\n"
+                f"Revise los datos en todas las pestañas.\n\n"
+                f"Para hacer estos cambios permanentes en el archivo de configuración principal (current_data.json), presione 'Guardar Datos' en alguna pestaña.",
                 parent=self
             )
             
@@ -1391,12 +1517,9 @@ class VueloTab(ttkb.Frame):
                 self.main_app.refresh_all_tabs()
                 print("VueloTab: main_app.refresh_all_tabs() called.")
         else:
-            # If loading failed, potentially reload original state or inform user further.
-            # For now, DataManager might be in a cleared state if loading didn't repopulate it.
-            # It might be better to reload previous state or default state if load fails mid-way.
-            print("VueloTab: Loading from current_session.json failed. DataManager might be empty or partially loaded.")
-            # Optionally, re-trigger a load of current_data.json or default state if robust error recovery is needed here.
-            # self.data_manager.load_data() # This would reload current_data.json
+            print("VueloTab: Loading failed. DataManager might be empty or partially loaded.")
+            # Optionally, reload original state from current_data.json if robust error recovery is needed
+            # self.data_manager.load_data()
     
     def search_by_date(self):
         """Search for trainings by date."""
@@ -1604,33 +1727,108 @@ class VueloTab(ttkb.Frame):
     def delete_training(self, training_id):
         """Delete a specific training from the archives and full data."""
         if training_id not in self.training_archives:
-            messagebox.showerror("Error", f"No se encontró el entrenamiento con ID {training_id}")
+            messagebox.showerror("Error", f"No se encontró el entrenamiento con ID {training_id}", parent=self)
             return
+            
+        archive_info = self.training_archives[training_id]
+        source_file = archive_info.get('source_file', '')
+        
+        # Show different confirmation messages depending on source
+        if source_file == 'current_session.json':
+            confirm_message = (
+                "¿Está seguro que desea eliminar la sesión actual?\n\n"
+                "ADVERTENCIA: Esta acción eliminará ÚNICAMENTE el archivo 'current_session.json', "
+                "pero NO afectará los archivos de entrenamiento archivados.\n\n"
+                "Si desea eliminar permanentemente un entrenamiento archivado, "
+                "primero debe guardarlo en los archivos y luego eliminarlo desde la lista de archivos.\n\n"
+                "Esta acción no se puede deshacer."
+            )
+        else:
+            fecha = archive_info.get('fecha', 'N/A')
+            vuelo_num = archive_info.get('vuelo_del_ano', 'N/A')
+            confirm_message = (
+                f"¿Está seguro que desea eliminar permanentemente este entrenamiento archivado?\n\n"
+                f"Fecha: {fecha}\n"
+                f"Entrenamiento No.: {vuelo_num}\n\n"
+                "ADVERTENCIA: Esta acción eliminará permanentemente todos los datos "
+                "del entrenamiento de los archivos de archivo.\n\n"
+                "Esta acción no se puede deshacer."
+            )
+        
         confirm = messagebox.askyesno(
             "Eliminar Entrenamiento",
-            "¿Está seguro que desea eliminar este entrenamiento? Esta acción no se puede deshacer.",
-            icon="warning"
+            confirm_message,
+            icon="warning",
+            parent=self
         )
+        
         if not confirm:
             return
+            
         try:
-            # Remove from training_archives and save
-            del self.training_archives[training_id]
-            self.save_training_archives()
-            # Remove from training_full_data.json if exists
-            archives_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'archives')
-            full_data_file = os.path.join(archives_dir, 'training_full_data.json')
-            if os.path.exists(full_data_file):
-                with open(full_data_file, 'r', encoding='utf-8') as f:
-                    all_training_data = json.load(f)
-                if training_id in all_training_data:
-                    del all_training_data[training_id]
-                    with open(full_data_file, 'w', encoding='utf-8') as f:
-                        json.dump(all_training_data, f, ensure_ascii=False, indent=4)
+            if source_file == 'current_session.json':
+                # Delete current session file
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                data_dir = os.path.join(base_dir, 'data')
+                current_session_path = os.path.join(data_dir, 'current_session.json')
+                
+                if os.path.exists(current_session_path):
+                    os.remove(current_session_path)
+                    print(f"VueloTab: Deleted current_session.json file")
+                    
+                # Remove from in-memory archives
+                del self.training_archives[training_id]
+                
+                messagebox.showinfo("Eliminado", "La sesión actual ha sido eliminada correctamente.", parent=self)
+                
+            else:
+                # Delete from archived files
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                archives_dir = os.path.join(base_dir, 'data', 'archives')
+                
+                # Remove from training_archives.json
+                training_archives_path = os.path.join(archives_dir, 'training_archives.json')
+                if os.path.exists(training_archives_path):
+                    try:
+                        with open(training_archives_path, 'r', encoding='utf-8') as f:
+                            all_archives = json.load(f)
+                        
+                        if training_id in all_archives:
+                            del all_archives[training_id]
+                            
+                            with open(training_archives_path, 'w', encoding='utf-8') as f:
+                                json.dump(all_archives, f, ensure_ascii=False, indent=4)
+                            print(f"VueloTab: Removed {training_id} from training_archives.json")
+                    except Exception as e_archive:
+                        print(f"VueloTab: Error updating training_archives.json: {e_archive}")
+                
+                # Remove from training_full_data.json
+                full_data_path = os.path.join(archives_dir, 'training_full_data.json')
+                if os.path.exists(full_data_path):
+                    try:
+                        with open(full_data_path, 'r', encoding='utf-8') as f:
+                            all_full_data = json.load(f)
+                        
+                        if training_id in all_full_data:
+                            del all_full_data[training_id]
+                            
+                            with open(full_data_path, 'w', encoding='utf-8') as f:
+                                json.dump(all_full_data, f, ensure_ascii=False, indent=4)
+                            print(f"VueloTab: Removed {training_id} from training_full_data.json")
+                    except Exception as e_full:
+                        print(f"VueloTab: Error updating training_full_data.json: {e_full}")
+                
+                # Remove from in-memory archives
+                del self.training_archives[training_id]
+                
+                messagebox.showinfo("Eliminado", "El entrenamiento archivado ha sido eliminado permanentemente.", parent=self)
+            
+            # Refresh the training list to reflect changes
             self.refresh_training_list()
-            messagebox.showinfo("Eliminado", "El entrenamiento ha sido eliminado correctamente.")
+            
         except Exception as e:
-            messagebox.showerror("Error", f"Error al eliminar el entrenamiento: {e}")
+            print(f"VueloTab: Error deleting training: {e}")
+            messagebox.showerror("Error", f"Error al eliminar el entrenamiento: {e}", parent=self)
 
     def cleanup_bindings(self, event=None):
         """Clean up event bindings to prevent errors when tab is destroyed."""
