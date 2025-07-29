@@ -26,34 +26,40 @@ class SymptomDialog(tk.Toplevel):
         self.vars = {}
         self.checkbuttons = []
         self.custom_symptoms = []  # Store custom symptoms
+        self.container = None  # Store container reference
 
-        # Set dialog size and make it resizable
-        self.geometry("520x650")  # Width x Height
-        self.minsize(450, 500)    # Minimum size
-        self.maxsize(700, 800)    # Maximum size
-        self.resizable(True, True)  # Allow resizing
+        # Set dialog size - fixed size to ensure scrolling works
+        self.geometry("520x650")
+        self.minsize(500, 600)
+        self.maxsize(600, 750)
+        self.resizable(True, True)
         
-        # --- UI Layout ---
-        main_frame = ttkb.Frame(self, padding=10)
+        # --- Main Layout ---
+        main_frame = ttkb.Frame(self, padding=15)
         main_frame.pack(fill=tk.BOTH, expand=True)
         
+        # Header
         header = ttkb.Label(
             main_frame, 
             text="Seleccione hasta 3 síntomas:", 
-            bootstyle="info"
+            bootstyle="info",
+            font=('Segoe UI', 11, 'bold')
         )
-        header.pack(pady=(0, 10))
+        header.pack(pady=(0, 15))
         
-        # Scrollable frame for checkboxes with improved dimensions
+        # Scrollable frame with explicit height to trigger scrolling
         list_frame = ScrolledFrame(
             main_frame, 
-            autohide=True, 
-            height=450,  # Increased height
-            width=480    # Increased width
+            autohide=True,
+            bootstyle="round",
+            height=420  # Fixed height to ensure scrolling
         )
-        list_frame.pack(fill=tk.BOTH, expand=True)
-        container = list_frame.container
-
+        list_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+        
+        # Store container reference and configure it
+        self.container = list_frame.container
+        
+        # Add all symptoms to the scrollable container
         for symptom in self.symptoms_list:
             var = tk.BooleanVar()
             # Pre-select if it's in current symptoms
@@ -61,43 +67,56 @@ class SymptomDialog(tk.Toplevel):
                 var.set(True)
                 
             cb = ttkb.Checkbutton(
-                container, 
+                self.container, 
                 text=symptom, 
                 variable=var,
                 bootstyle="round-toggle", 
                 command=self.check_limit
             )
-            # Better spacing and fill
-            cb.pack(anchor='w', padx=15, pady=3, fill='x')
+            cb.pack(anchor='w', padx=20, pady=5, fill='x')
             self.vars[symptom] = var
             self.checkbuttons.append(cb)
 
         # Add any custom symptoms from current_symptoms
         for symptom in current_symptoms:
             if symptom not in self.symptoms_list and symptom not in self.vars:
-                self.add_custom_symptom_checkbox(container, symptom, True)
+                self.add_custom_symptom_checkbox(self.container, symptom, True)
 
-        # --- Buttons ---
+        # --- Bottom Button Frame ---
         button_frame = ttkb.Frame(main_frame)
         button_frame.pack(fill=tk.X, pady=(10, 0))
 
+        # OK button
         ok_btn = ttkb.Button(
             button_frame, 
             text="OK", 
             command=self.on_ok, 
-            bootstyle="success"
+            bootstyle="success",
+            width=12
         )
-        ok_btn.pack(side=tk.RIGHT, padx=5)
+        ok_btn.pack(side=tk.RIGHT, padx=(5, 0))
         
+        # Cancel button
         cancel_btn = ttkb.Button(
             button_frame, 
             text="Cancelar", 
             command=self.on_cancel, 
-            bootstyle="secondary"
+            bootstyle="secondary",
+            width=12
         )
-        cancel_btn.pack(side=tk.RIGHT, padx=5)
+        cancel_btn.pack(side=tk.RIGHT, padx=(0, 5))
         
         # Center the dialog relative to parent
+        self.center_dialog(parent)
+            
+        # Focus on the dialog
+        self.focus_set()
+        
+        # Check limit initially
+        self.check_limit()
+
+    def center_dialog(self, parent):
+        """Center the dialog relative to the parent window."""
         self.update_idletasks()
         try:
             parent_x = parent.winfo_rootx()
@@ -105,7 +124,7 @@ class SymptomDialog(tk.Toplevel):
             parent_w = parent.winfo_width()
             parent_h = parent.winfo_height()
             
-            # Use the set dialog dimensions for centering
+            # Use fixed dialog dimensions
             dialog_w = 520
             dialog_h = 650
             
@@ -121,12 +140,6 @@ class SymptomDialog(tk.Toplevel):
         except tk.TclError:
             # Fallback to default centering if parent info unavailable
             self.geometry("520x650")
-            
-        # Focus on the dialog
-        self.focus_set()
-        
-        # Check limit initially
-        self.check_limit()
 
     def add_custom_symptom_checkbox(self, container, symptom_text,
                                     selected=False):
@@ -141,8 +154,7 @@ class SymptomDialog(tk.Toplevel):
             bootstyle="round-toggle",
             command=self.check_limit
         )
-        # Consistent spacing with main symptoms
-        cb.pack(anchor='w', padx=15, pady=3, fill='x')
+        cb.pack(anchor='w', padx=20, pady=5, fill='x')
         self.vars[symptom_text] = var
         self.checkbuttons.append(cb)
         self.custom_symptoms.append(symptom_text)
@@ -181,19 +193,15 @@ class SymptomDialog(tk.Toplevel):
             
             # Add custom symptom if not already present
             if custom_text not in self.vars:
-                # Find the container (list_frame.container)
-                container = None
-                for widget in self.winfo_children():
-                    if isinstance(widget, ttkb.Frame):
-                        for child in widget.winfo_children():
-                            if isinstance(child, ScrolledFrame):
-                                container = child.container
-                                break
+                self.add_custom_symptom_checkbox(
+                    self.container, custom_text, True
+                )
                 
-                if container:
-                    self.add_custom_symptom_checkbox(
-                        container, custom_text, True
-                    )
+            # Update the dialog to reflect the new checkbox
+            self.update_idletasks()
+            
+            # Recheck the limit since we added a new selected item
+            self.check_limit()
         else:
             # If no text entered, uncheck "Otro"
             self.vars["Otro"].set(False)

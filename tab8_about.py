@@ -23,7 +23,7 @@ class AboutTab(ttkb.Frame):
         self.create_widgets()
         
     def create_widgets(self):
-        """Create the tab UI widgets using proper scrolling layout."""
+        """Create the tab UI widgets with proper scrolling functionality."""
         # Configure the main frame to expand
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -36,35 +36,34 @@ class AboutTab(ttkb.Frame):
         )
         scrolled_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
 
-        # The container inside the ScrolledFrame
-        container = scrolled_frame
+        # Use the container inside the ScrolledFrame for content
+        container = scrolled_frame.container
         
-        # Ensure the container can expand properly
+        # Configure container for proper layout
         container.columnconfigure(0, weight=1)
 
         def create_section(parent, title, title_bootstyle="info"):
             """Helper function to create a titled section frame."""
-            frame = ttkb.Frame(parent)
-            frame.grid(row=len(parent.grid_slaves()), column=0, 
-                      sticky="ew", pady=(10, 5), padx=5)
-            frame.columnconfigure(0, weight=1)
+            section_frame = ttkb.Frame(parent)
+            section_frame.pack(fill="x", expand=True, pady=(10, 5), padx=5)
             
             if title:
                 title_label = ttkb.Label(
-                    frame, 
+                    section_frame, 
                     text=title, 
                     font=('Segoe UI', 12, 'bold'), 
                     bootstyle=title_bootstyle
                 )
-                title_label.grid(row=0, column=0, sticky="w", pady=(0, 5))
+                title_label.pack(anchor="w", pady=(0, 5))
             
-            content_frame = ttkb.Frame(frame)
-            content_frame.grid(row=1, column=0, sticky="ew", padx=10)
-            content_frame.columnconfigure(0, weight=1)
+            content_frame = ttkb.Frame(section_frame)
+            content_frame.pack(fill="x", expand=True, padx=10)
             return content_frame
 
         # --- App Header ---
         header_content = create_section(container, title=None)
+        
+        # Load and display app icon
         self.load_app_icon(header_content)
         
         # App title
@@ -74,7 +73,7 @@ class AboutTab(ttkb.Frame):
             font=('Segoe UI', 16, 'bold'), 
             bootstyle="primary"
         )
-        title_label.grid(row=1, column=0, pady=5)
+        title_label.pack(pady=5)
         
         # App subtitle
         subtitle_label = ttkb.Label(
@@ -86,7 +85,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.CENTER
         )
-        subtitle_label.grid(row=2, column=0, pady=5)
+        subtitle_label.pack(pady=5)
         
         # Version info
         version_label = ttkb.Label(
@@ -95,7 +94,7 @@ class AboutTab(ttkb.Frame):
             font=('Segoe UI', 12, 'bold'), 
             bootstyle="info"
         )
-        version_label.grid(row=3, column=0, pady=2)
+        version_label.pack(pady=2)
         
         # Release date
         date_label = ttkb.Label(
@@ -104,12 +103,11 @@ class AboutTab(ttkb.Frame):
             font=('Segoe UI', 10), 
             bootstyle="secondary"
         )
-        date_label.grid(row=4, column=0, pady=2)
+        date_label.pack(pady=2)
         
         # Separator
         separator = ttkb.Separator(container)
-        separator.grid(row=len(container.grid_slaves()), column=0, 
-                      sticky="ew", padx=20, pady=15)
+        separator.pack(fill="x", padx=20, pady=15)
         
         # --- Description Section ---
         desc_content = create_section(container, "Descripción del Sistema")
@@ -130,7 +128,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        desc_label.grid(row=0, column=0, sticky="ew")
+        desc_label.pack(fill="x", expand=True)
         
         # --- Features Section ---
         features_content = create_section(
@@ -157,7 +155,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        features_label.grid(row=0, column=0, sticky="ew")
+        features_label.pack(fill="x", expand=True)
 
         # --- Technical Specifications Section ---
         tech_content = create_section(container, "Especificaciones Técnicas")
@@ -183,7 +181,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        tech_label.grid(row=0, column=0, sticky="ew")
+        tech_label.pack(fill="x", expand=True)
 
         # --- System Requirements Section ---
         req_content = create_section(container, "Requisitos del Sistema")
@@ -202,7 +200,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        req_label.grid(row=0, column=0, sticky="ew")
+        req_label.pack(fill="x", expand=True)
 
         # --- Development Info Section ---
         dev_content = create_section(container, "Información de Desarrollo")
@@ -221,7 +219,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        dev_label.grid(row=0, column=0, sticky="ew", pady=(0, 5))
+        dev_label.pack(fill="x", expand=True, pady=(0, 5))
         
         team_text = (
             "Equipo de desarrollo:\n"
@@ -238,7 +236,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        team_label.grid(row=1, column=0, sticky="ew")
+        team_label.pack(fill="x", expand=True)
 
         # --- Repository Section ---
         repo_content = create_section(container, "Repositorio del Proyecto")
@@ -250,9 +248,9 @@ class AboutTab(ttkb.Frame):
             foreground="blue", 
             cursor="hand2"
         )
-        repo_link.grid(row=0, column=0, sticky="ew")
+        repo_link.pack(fill="x", expand=True)
         repo_link.bind("<Button-1>", 
-                      lambda e: webbrowser.open_new(repo_link_text))
+                       lambda e: webbrowser.open_new(repo_link_text))
         
         repo_info_text = ("Visite el repositorio para actualizaciones, "
                           "documentación técnica y nuevas versiones.")
@@ -263,7 +261,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        repo_info.grid(row=1, column=0, sticky="ew", pady=(5, 0))
+        repo_info.pack(fill="x", expand=True, pady=(5, 0))
 
         # --- Version History Section ---
         version_content = create_section(container, "Historial de Versiones")
@@ -296,7 +294,7 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        version_label.grid(row=0, column=0, sticky="ew")
+        version_label.pack(fill="x", expand=True)
 
         # --- Support Section ---
         support_content = create_section(container, "Soporte y Contacto")
@@ -315,13 +313,11 @@ class AboutTab(ttkb.Frame):
             wraplength=600, 
             justify=tk.LEFT
         )
-        support_label.grid(row=0, column=0, sticky="ew")
+        support_label.pack(fill="x", expand=True)
 
         # --- Copyright Section ---
         copyright_frame = ttkb.Frame(container)
-        copyright_frame.grid(row=len(container.grid_slaves()), column=0, 
-                           sticky="ew", pady=(20, 10))
-        copyright_frame.columnconfigure(0, weight=1)
+        copyright_frame.pack(fill="x", expand=True, pady=(20, 10))
         
         copyright_text = (
             "© 2024-2025 Fuerza Aérea Colombiana - "
@@ -335,7 +331,7 @@ class AboutTab(ttkb.Frame):
             bootstyle="secondary", 
             justify=tk.CENTER
         )
-        copyright_label.grid(row=0, column=0, pady=5)
+        copyright_label.pack(pady=5)
         
         disclaimer_text = (
             "Este software es propiedad de la Fuerza Aérea Colombiana "
@@ -349,7 +345,7 @@ class AboutTab(ttkb.Frame):
             bootstyle="secondary", 
             justify=tk.CENTER
         )
-        disclaimer_label.grid(row=1, column=0)
+        disclaimer_label.pack()
     
     def load_app_icon(self, parent):
         """Load and display the application icon."""
@@ -372,7 +368,7 @@ class AboutTab(ttkb.Frame):
                     image=self.icon_photo, 
                     bootstyle="light"
                 )
-                icon_label.grid(row=0, column=0, pady=(5, 10))
+                icon_label.pack(pady=(5, 10))
             else:
                 # Fallback if icon not found
                 icon_placeholder = ttkb.Label(
@@ -381,7 +377,7 @@ class AboutTab(ttkb.Frame):
                     font=('Segoe UI', 48), 
                     bootstyle="light"
                 )
-                icon_placeholder.grid(row=0, column=0, pady=(5, 10))
+                icon_placeholder.pack(pady=(5, 10))
         except Exception as e:
             print(f"Error loading icon: {e}")
             # Fallback emoji icon
@@ -391,7 +387,7 @@ class AboutTab(ttkb.Frame):
                 font=('Segoe UI', 48), 
                 bootstyle="light"
             )
-            icon_placeholder.grid(row=0, column=0, pady=(5, 10))
+            icon_placeholder.pack(pady=(5, 10))
     
     def load_data(self):
         """Empty implementation to conform to tab interface pattern."""
