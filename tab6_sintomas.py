@@ -27,6 +27,12 @@ class SymptomDialog(tk.Toplevel):
         self.checkbuttons = []
         self.custom_symptoms = []  # Store custom symptoms
 
+        # Set dialog size and make it resizable
+        self.geometry("520x650")  # Width x Height
+        self.minsize(450, 500)    # Minimum size
+        self.maxsize(700, 800)    # Maximum size
+        self.resizable(True, True)  # Allow resizing
+        
         # --- UI Layout ---
         main_frame = ttkb.Frame(self, padding=10)
         main_frame.pack(fill=tk.BOTH, expand=True)
@@ -38,12 +44,12 @@ class SymptomDialog(tk.Toplevel):
         )
         header.pack(pady=(0, 10))
         
-        # Scrollable frame for checkboxes - increased height and width
+        # Scrollable frame for checkboxes with improved dimensions
         list_frame = ScrolledFrame(
             main_frame, 
             autohide=True, 
-            height=500, 
-            width=400
+            height=450,  # Increased height
+            width=480    # Increased width
         )
         list_frame.pack(fill=tk.BOTH, expand=True)
         container = list_frame.container
@@ -61,7 +67,8 @@ class SymptomDialog(tk.Toplevel):
                 bootstyle="round-toggle", 
                 command=self.check_limit
             )
-            cb.pack(anchor='w', padx=10, pady=2)
+            # Better spacing and fill
+            cb.pack(anchor='w', padx=15, pady=3, fill='x')
             self.vars[symptom] = var
             self.checkbuttons.append(cb)
 
@@ -90,18 +97,33 @@ class SymptomDialog(tk.Toplevel):
         )
         cancel_btn.pack(side=tk.RIGHT, padx=5)
         
-        # Center the dialog
+        # Center the dialog relative to parent
         self.update_idletasks()
-        parent_x = parent.winfo_rootx()
-        parent_y = parent.winfo_rooty()
-        parent_w = parent.winfo_width()
-        parent_h = parent.winfo_height()
-        dialog_w = self.winfo_width()
-        dialog_h = self.winfo_height()
-        
-        x = parent_x + (parent_w // 2) - (dialog_w // 2)
-        y = parent_y + (parent_h // 2) - (dialog_h // 2)
-        self.geometry(f'+{x}+{y}')
+        try:
+            parent_x = parent.winfo_rootx()
+            parent_y = parent.winfo_rooty()
+            parent_w = parent.winfo_width()
+            parent_h = parent.winfo_height()
+            
+            # Use the set dialog dimensions for centering
+            dialog_w = 520
+            dialog_h = 650
+            
+            # Calculate center position
+            x = parent_x + (parent_w // 2) - (dialog_w // 2)
+            y = parent_y + (parent_h // 2) - (dialog_h // 2)
+            
+            # Ensure dialog stays within screen bounds
+            x = max(0, x)
+            y = max(0, y)
+            
+            self.geometry(f'{dialog_w}x{dialog_h}+{x}+{y}')
+        except tk.TclError:
+            # Fallback to default centering if parent info unavailable
+            self.geometry("520x650")
+            
+        # Focus on the dialog
+        self.focus_set()
         
         # Check limit initially
         self.check_limit()
@@ -119,7 +141,8 @@ class SymptomDialog(tk.Toplevel):
             bootstyle="round-toggle",
             command=self.check_limit
         )
-        cb.pack(anchor='w', padx=10, pady=2)
+        # Consistent spacing with main symptoms
+        cb.pack(anchor='w', padx=15, pady=3, fill='x')
         self.vars[symptom_text] = var
         self.checkbuttons.append(cb)
         self.custom_symptoms.append(symptom_text)
