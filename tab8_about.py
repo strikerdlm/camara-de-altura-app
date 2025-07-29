@@ -28,19 +28,71 @@ class AboutTab(ttkb.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-        # Create ScrolledFrame that fills the entire tab
-        scrolled_frame = ttkb.ScrolledFrame(
-            self,
-            autohide=True,
-            bootstyle="round"
-        )
-        scrolled_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        # Create main container frame
+        main_frame = ttkb.Frame(self)
+        main_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+        main_frame.columnconfigure(0, weight=1)
+        main_frame.rowconfigure(0, weight=1)
 
-        # Use the container inside the ScrolledFrame for content
-        container = scrolled_frame.container
+        # Create Canvas and Scrollbar for manual scroll control
+        # This approach is based on joehutch.com solution for robust scrolling
+        self.canvas = tk.Canvas(
+            main_frame, highlightthickness=0, bg='white'
+        )
+        self.scrollbar = ttkb.Scrollbar(
+            main_frame, orient="vertical", command=self.canvas.yview
+        )
+        
+        # Configure canvas scrolling
+        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        
+        # Pack scrollbar and canvas
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Create scrollable frame inside canvas
+        container = ttkb.Frame(self.canvas)
+        
+        # Add scrollable frame to canvas
+        self.canvas_window = self.canvas.create_window(
+            (0, 0), 
+            window=container, 
+            anchor="nw"
+        )
         
         # Configure container for proper layout
         container.columnconfigure(0, weight=1)
+        
+        # Bind events for proper scrolling behavior
+        def update_scroll_region():
+            """Update scroll region when content changes."""
+            self.canvas.update_idletasks()
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            
+        def configure_canvas(event):
+            """Configure canvas when it's resized."""
+            # Update the window width to match canvas width
+            canvas_width = event.width
+            self.canvas.itemconfig(self.canvas_window, width=canvas_width)
+            update_scroll_region()
+            
+        def on_mousewheel(event):
+            """Handle mouse wheel scrolling."""
+            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            
+        def bind_mousewheel(event):
+            """Bind mouse wheel when entering canvas."""
+            self.canvas.bind_all("<MouseWheel>", on_mousewheel)
+            
+        def unbind_mousewheel(event):
+            """Unbind mouse wheel when leaving canvas."""
+            self.canvas.unbind_all("<MouseWheel>")
+        
+        # Bind events
+        self.canvas.bind('<Configure>', configure_canvas)
+        self.canvas.bind('<Enter>', bind_mousewheel)
+        self.canvas.bind('<Leave>', unbind_mousewheel)
+        container.bind('<Configure>', lambda e: update_scroll_region())
 
         def create_section(parent, title, title_bootstyle="info"):
             """Helper function to create a titled section frame."""
@@ -90,7 +142,7 @@ class AboutTab(ttkb.Frame):
         # Version info
         version_label = ttkb.Label(
             header_content, 
-            text="Versión 1.0.5 (Enero 2025)", 
+            text="Versión 1.0.6 (Julio 2025)", 
             font=('Segoe UI', 12, 'bold'), 
             bootstyle="info"
         )
@@ -99,7 +151,7 @@ class AboutTab(ttkb.Frame):
         # Release date
         date_label = ttkb.Label(
             header_content, 
-            text="Fecha de lanzamiento: Enero 2025", 
+            text="Fecha de lanzamiento: Julio 29, 2025", 
             font=('Segoe UI', 10), 
             bootstyle="secondary"
         )
@@ -266,6 +318,12 @@ class AboutTab(ttkb.Frame):
         # --- Version History Section ---
         version_content = create_section(container, "Historial de Versiones")
         version_history = (
+            "• Versión 1.0.6 (Julio 29, 2025):\n"
+            "  - Implementación de scrolling manual robusto basado en Canvas\n"
+            "  - Corrección definitiva del problema de scroll en 'Acerca de'\n"
+            "  - Mejora en edición manual de tiempos de hipoxia con tooltips\n"
+            "  - Códigos de color mejorados para distinguir entradas "
+            "automáticas vs manuales\n\n"
             "• Versión 1.0.5 (Enero 2025):\n"
             "  - Corrección del sistema de scroll en la pestaña 'Acerca de'\n"
             "  - Mejoras en el layout y distribución de contenido\n"
@@ -346,6 +404,11 @@ class AboutTab(ttkb.Frame):
             justify=tk.CENTER
         )
         disclaimer_label.pack()
+        
+        # Force initial scroll region update after all content is added
+        self.update_idletasks()
+        self.canvas.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
     
     def load_app_icon(self, parent):
         """Load and display the application icon."""

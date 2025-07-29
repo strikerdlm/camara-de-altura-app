@@ -91,6 +91,9 @@ class TiemposTab(ttkb.Frame):
         self.vision_warning_timers = []
         self.dnit_warning_timers = []
 
+        # Tooltip for manual editing
+        self.tooltip_window = None
+
         self.initialize_data()
         self.create_widgets()
         self.load_data()
@@ -144,7 +147,12 @@ class TiemposTab(ttkb.Frame):
         self.student_hypoxia_calculated = {}
         for i in range(1, self.num_students + 1):
             student_id = str(i)
-            self.student_hypoxia_calculated[student_id] = student_id in self.student_hypoxia_end_times
+            if student_id in self.manual_student_hypoxia_elapsed_times:
+                self.student_hypoxia_calculated[student_id] = "manual"
+            elif student_id in self.student_hypoxia_end_times:
+                self.student_hypoxia_calculated[student_id] = "automatic"
+            else:
+                self.student_hypoxia_calculated[student_id] = False
 
     def create_widgets(self):
         """Create the tab UI widgets."""
@@ -391,7 +399,7 @@ class TiemposTab(ttkb.Frame):
         action_label = ttkb.Label(parent, text="Registrar Tiempo", font=('Segoe UI', 10, 'bold'), anchor='w')
         action_label.grid(row=0, column=1, padx=5, pady=3, sticky='w')
         
-        time_label = ttkb.Label(parent, text="Tiempo de Hipoxia", font=('Segoe UI', 10, 'bold'), anchor='w')
+        time_label = ttkb.Label(parent, text="Tiempo de Hipoxia (Editable)", font=('Segoe UI', 10, 'bold'), anchor='w')
         time_label.grid(row=0, column=2, padx=5, pady=3, sticky='w')
         
         reset_label = ttkb.Label(parent, text="Reiniciar", font=('Segoe UI', 10, 'bold'), anchor='w')
@@ -401,9 +409,28 @@ class TiemposTab(ttkb.Frame):
         separator = ttkb.Separator(parent, orient="horizontal")
         separator.grid(row=1, column=0, columnspan=4, sticky="ew", pady=5)
         
+        # Add color legend
+        legend_frame = ttkb.Frame(parent)
+        legend_frame.grid(row=2, column=0, columnspan=4, sticky='ew', pady=(5, 10))
+        
+        legend_label = ttkb.Label(legend_frame, text="Códigos de color:", font=('Segoe UI', 8, 'bold'))
+        legend_label.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Success (automatic)
+        auto_legend = ttkb.Label(legend_frame, text="Verde: Automático", font=('Segoe UI', 8), bootstyle="success")
+        auto_legend.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Info (manual)
+        manual_legend = ttkb.Label(legend_frame, text="Azul: Manual", font=('Segoe UI', 8), bootstyle="info")
+        manual_legend.pack(side=tk.LEFT, padx=(0, 10))
+        
+        # Secondary (running)
+        running_legend = ttkb.Label(legend_frame, text="Gris: En tiempo real", font=('Segoe UI', 8), bootstyle="secondary")
+        running_legend.pack(side=tk.LEFT)
+
         for i in range(1, self.num_students + 1):
             student_id = str(i)
-            row_idx = i + 1  # Offset by 2 for header and separator
+            row_idx = i + 2  # Offset by 3 for header, separator, and legend
             
             # Label
             label = ttkb.Label(parent, text=f"Alumno {student_id}:", anchor='w')
@@ -419,19 +446,24 @@ class TiemposTab(ttkb.Frame):
             )
             calc_btn.grid(row=row_idx, column=1, padx=5, pady=3, sticky='ew')
             
-            # Time Display Label
+            # Time Display Entry (Editable as fallback)
             time_var = tk.StringVar(value="00:00:00")
             self.student_hypoxia_time_vars[student_id] = time_var
             time_entry = ttkb.Entry(
                 parent,
                 textvariable=time_var,
                 font=('Consolas', 10),
-                width=10, # HH:MM:SS
+                width=10,  # HH:MM:SS
                 bootstyle="default"
             )
             time_entry.grid(row=row_idx, column=2, padx=5, pady=3, sticky='w')
             self.student_hypoxia_entries[student_id] = time_entry
+            
+            # Add tooltip to indicate manual editing capability
+            time_entry.bind("<Enter>", lambda e: self.show_edit_tooltip(e.widget))
+            time_entry.bind("<Leave>", lambda e: self.hide_tooltip())
             time_entry.bind("<FocusOut>", lambda event, s_id=student_id: self.handle_manual_student_hypoxia_edit(s_id))
+            time_entry.bind("<KeyPress>", lambda event, s_id=student_id: self.on_manual_edit_start(s_id))
             
             # Reset Button
             reset_btn = ttkb.Button(
@@ -487,9 +519,9 @@ class TiemposTab(ttkb.Frame):
                 self.student_hypoxia_time_vars[student_id].set(elapsed_str)
             self.manual_student_hypoxia_elapsed_times[student_id] = elapsed_str
             if student_id in self.student_hypoxia_entries:
-                self.student_hypoxia_entries[student_id].configure(bootstyle="success")
+                self.student_hypoxia_entries[student_id].configure(bootstyle="success")  # Green for automatic calculation
 
-            self.student_hypoxia_calculated[student_id] = True # Mark as calculated/set
+            self.student_hypoxia_calculated[student_id] = "automatic"  # Mark as automatically calculated
             
             self.data_manager.current_data['student_hypoxia_end_times'] = self.student_hypoxia_end_times
             self.data_manager.current_data['manual_student_hypoxia_elapsed_times'] = self.manual_student_hypoxia_elapsed_times
@@ -506,37 +538,46 @@ class TiemposTab(ttkb.Frame):
 
         if not elapsed_time_str or elapsed_time_str == "00:00:00":
             self.manual_student_hypoxia_elapsed_times.pop(student_id, None)
-            self.student_hypoxia_end_times.pop(student_id, None) # Clear associated end time if manual elapsed is cleared
+            self.student_hypoxia_end_times.pop(student_id, None)  # Clear associated end time if manual elapsed is cleared
             self.student_hypoxia_calculated[student_id] = False
             entry_widget.configure(bootstyle="default")
             self._on_data_changed()
-            self.data_manager.save_data() # Save the cleared state
+            self.data_manager.save_data()  # Save the cleared state
             return
 
         try:
-            # Validate HH:MM:SS format by trying to parse it (though we don't need the object itself for storage)
+            # Validate HH:MM:SS format by trying to parse it
             parts = list(map(int, elapsed_time_str.split(':')))
-            if len(parts) != 3 or not (0 <= parts[0] <= 99 and 0 <= parts[1] <= 59 and 0 <= parts[2] <= 59) : # Basic check
+            if len(parts) != 3 or not (0 <= parts[0] <= 99 and 0 <= parts[1] <= 59 and 0 <= parts[2] <= 59):  # Basic check
                 raise ValueError("Invalid time component value")
 
+            # Store the manually entered time
             self.manual_student_hypoxia_elapsed_times[student_id] = elapsed_time_str
-            # If a manual elapsed time is set, we might not have a precise end_time,
-            # or we might decide to clear/ignore student_hypoxia_end_times[student_id]
-            # For now, let's keep end_times if they were set by "Calcular", but manual_elapsed takes precedence for display
-            self.student_hypoxia_calculated[student_id] = True
-            entry_widget.configure(bootstyle="success")
+            self.student_hypoxia_calculated[student_id] = "manual"  # Mark as manually edited
+            
+            # Use different styling to distinguish manual vs automatic
+            entry_widget.configure(bootstyle="info")  # Blue for manual entries
             self._on_data_changed()
             
             if 'manual_student_hypoxia_elapsed_times' not in self.data_manager.current_data:
                 self.data_manager.current_data['manual_student_hypoxia_elapsed_times'] = {}
             self.data_manager.current_data['manual_student_hypoxia_elapsed_times'][student_id] = elapsed_time_str
             self.data_manager.save_data()
+            
+            # Show confirmation that manual edit was accepted
+            print(f"Manual time set for Alumno {student_id}: {elapsed_time_str}")
+            
         except ValueError:
-            messagebox.showerror("Error de Formato", "Formato de tiempo inválido. Use HH:MM:SS.", parent=self)
+            messagebox.showerror(
+                "Error de Formato", 
+                "Formato de tiempo inválido. Use HH:MM:SS.\nEjemplo: 05:30:15", 
+                parent=self
+            )
+            # Revert to previous valid value or default
             previous_value = self.manual_student_hypoxia_elapsed_times.get(student_id)
             if previous_value:
                 self.student_hypoxia_time_vars[student_id].set(previous_value)
-                entry_widget.configure(bootstyle="success")
+                entry_widget.configure(bootstyle="info")  # Manual entry style
             else:
                 self.student_hypoxia_time_vars[student_id].set("00:00:00")
                 entry_widget.configure(bootstyle="default")
@@ -554,6 +595,7 @@ class TiemposTab(ttkb.Frame):
         if student_id in self.student_hypoxia_entries:
             self.student_hypoxia_entries[student_id].configure(bootstyle="default")
         
+        print(f"Reset time for Alumno {student_id}")
         self.save_data()
 
     def create_calculated_totals_section(self, parent):
@@ -743,8 +785,8 @@ class TiemposTab(ttkb.Frame):
 
             if student_id_str in self.manual_student_hypoxia_elapsed_times:
                 elapsed_to_display = self.manual_student_hypoxia_elapsed_times[student_id_str]
-                style = "success" # Or "warning" to indicate manual
-                is_calculated = True
+                style = "info"  # Blue for manual entries
+                is_calculated = "manual"
             elif start_hypoxia_time_str and student_id_str in self.student_hypoxia_end_times:
                 end_time_str = self.student_hypoxia_end_times[student_id_str]
                 try:
@@ -762,12 +804,13 @@ class TiemposTab(ttkb.Frame):
                     hours, remainder = divmod(elapsed_seconds, 3600)
                     minutes, seconds = divmod(remainder, 60)
                     elapsed_to_display = f"{hours:02}:{minutes:02}:{seconds:02}"
-                    style = "success"
-                    is_calculated = True
+                    style = "success"  # Green for automatic calculations
+                    is_calculated = "automatic"
                 except Exception as e:
                     print(f"Error loading student {student_id_str} hypoxia time: {e}")
                     elapsed_to_display = "Error"
                     style = "danger"
+                    is_calculated = False
             
             if student_id_str in self.student_hypoxia_time_vars:
                 self.student_hypoxia_time_vars[student_id_str].set(elapsed_to_display)
@@ -935,6 +978,7 @@ class TiemposTab(ttkb.Frame):
         
         if start_hypoxia:
             for student_id in self.student_hypoxia_time_vars.keys():
+                # Only show running time for students without calculated/manual times
                 if not self.student_hypoxia_calculated.get(student_id, False):
                     self.display_running_hypoxia_time(student_id)
         
@@ -977,9 +1021,14 @@ class TiemposTab(ttkb.Frame):
             minutes, seconds = divmod(remainder, 60)
             elapsed_str = f"{hours:02}:{minutes:02}:{seconds:02}"
             
-            # Update display if not already calculated
-            if student_id in self.student_hypoxia_time_vars and not self.student_hypoxia_calculated.get(student_id, False):
+            # Update display if not already calculated or manually set
+            calculation_status = self.student_hypoxia_calculated.get(student_id, False)
+            if (student_id in self.student_hypoxia_time_vars and 
+                calculation_status not in ["manual", "automatic", "manual_editing"]):
                 self.student_hypoxia_time_vars[student_id].set(elapsed_str)
+                # Use a subtle style for running time display
+                if student_id in self.student_hypoxia_entries:
+                    self.student_hypoxia_entries[student_id].configure(bootstyle="secondary")
                 
         except Exception as e:
             print(f"Error displaying running hypoxia time: {e}")
@@ -1000,6 +1049,8 @@ class TiemposTab(ttkb.Frame):
         for timer_id in self.dnit_warning_timers:
             self.after_cancel(timer_id)
         self.dnit_warning_timers.clear()
+        # Clean up tooltip
+        self.hide_tooltip()
         # Clean up event bindings
         if hasattr(self, 'events_bindings'):
             for widget, event_name, func in self.events_bindings:
@@ -1187,3 +1238,41 @@ class TiemposTab(ttkb.Frame):
             "Comunicar tiempo a lector.",
             parent=self
         )
+    
+    def show_edit_tooltip(self, widget):
+        """Show tooltip indicating the field can be manually edited."""
+        if self.tooltip_window:
+            return
+        
+        x = widget.winfo_rootx() + 25
+        y = widget.winfo_rooty() - 25
+        
+        self.tooltip_window = tk.Toplevel(self)
+        self.tooltip_window.wm_overrideredirect(True)
+        self.tooltip_window.wm_geometry(f"+{x}+{y}")
+        
+        label = tk.Label(
+            self.tooltip_window,
+            text="Editable manualmente\n(Formato: HH:MM:SS)",
+            background="lightyellow",
+            relief="solid",
+            borderwidth=1,
+            font=("Arial", 8),
+            padx=5,
+            pady=2
+        )
+        label.pack()
+    
+    def hide_tooltip(self):
+        """Hide the tooltip."""
+        if self.tooltip_window:
+            self.tooltip_window.destroy()
+            self.tooltip_window = None
+    
+    def on_manual_edit_start(self, student_id: str):
+        """Called when user starts typing in a student hypoxia time field."""
+        if student_id in self.student_hypoxia_entries:
+            # Change style to indicate manual editing is in progress
+            self.student_hypoxia_entries[student_id].configure(bootstyle="warning")
+            # Mark that this student's time is being manually edited
+            self.student_hypoxia_calculated[student_id] = "manual_editing"
