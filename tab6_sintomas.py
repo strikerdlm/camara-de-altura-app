@@ -26,12 +26,13 @@ class SymptomDialog(tk.Toplevel):
         self.vars = {}
         self.checkbuttons = []
         self.custom_symptoms = []  # Store custom symptoms
-        self.container = None  # Store container reference
+        self.canvas = None
+        self.scrollable_frame = None
 
-        # Set dialog size - fixed size to ensure scrolling works
-        self.geometry("520x650")
+        # Set dialog size - allow resizing
+        self.geometry("550x700")
         self.minsize(500, 600)
-        self.maxsize(600, 750)
+        self.maxsize(800, 900)
         self.resizable(True, True)
         
         # --- Main Layout ---
@@ -47,19 +48,54 @@ class SymptomDialog(tk.Toplevel):
         )
         header.pack(pady=(0, 15))
         
-        # Scrollable frame with explicit height to trigger scrolling
-        list_frame = ScrolledFrame(
-            main_frame, 
-            autohide=True,
-            bootstyle="round",
-            height=420  # Fixed height to ensure scrolling
+        # Create canvas and scrollbar frame
+        canvas_frame = ttkb.Frame(main_frame)
+        canvas_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+        
+        # Configure canvas_frame grid weights
+        canvas_frame.grid_rowconfigure(0, weight=1)
+        canvas_frame.grid_columnconfigure(0, weight=1)
+        
+        # Create canvas
+        self.canvas = tk.Canvas(
+            canvas_frame, 
+            bg='white',
+            highlightthickness=0
         )
-        list_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
+        self.canvas.grid(row=0, column=0, sticky="nsew")
         
-        # Store container reference and configure it
-        self.container = list_frame.container
+        # Create scrollbar
+        scrollbar = ttkb.Scrollbar(
+            canvas_frame, 
+            orient="vertical", 
+            command=self.canvas.yview
+        )
+        scrollbar.grid(row=0, column=1, sticky="ns")
         
-        # Add all symptoms to the scrollable container
+        # Configure canvas scrolling
+        self.canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Create scrollable frame inside canvas
+        self.scrollable_frame = ttkb.Frame(self.canvas)
+        
+        # Add scrollable frame to canvas
+        canvas_window = self.canvas.create_window(
+            (0, 0), 
+            window=self.scrollable_frame, 
+            anchor="nw"
+        )
+        
+        # Configure scrollable frame to expand with canvas width
+        def configure_canvas(event):
+            # Update scroll region when frame size changes
+            self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            # Make frame fill canvas width
+            canvas_width = event.width
+            self.canvas.itemconfig(canvas_window, width=canvas_width)
+            
+        self.canvas.bind('<Configure>', configure_canvas)
+        
+        # Add all symptoms to the scrollable frame
         for symptom in self.symptoms_list:
             var = tk.BooleanVar()
             # Pre-select if it's in current symptoms
@@ -67,24 +103,37 @@ class SymptomDialog(tk.Toplevel):
                 var.set(True)
                 
             cb = ttkb.Checkbutton(
-                self.container, 
+                self.scrollable_frame, 
                 text=symptom, 
                 variable=var,
                 bootstyle="round-toggle", 
                 command=self.check_limit
             )
-            cb.pack(anchor='w', padx=20, pady=5, fill='x')
+            cb.pack(anchor='w', padx=20, pady=6, fill='x')
             self.vars[symptom] = var
             self.checkbuttons.append(cb)
 
         # Add any custom symptoms from current_symptoms
         for symptom in current_symptoms:
             if symptom not in self.symptoms_list and symptom not in self.vars:
-                self.add_custom_symptom_checkbox(self.container, symptom, True)
+                self.add_custom_symptom_checkbox(symptom, True)
+
+        # Enable mouse wheel scrolling
+        def on_mousewheel(event):
+            self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+            
+        def bind_mousewheel(event):
+            self.canvas.bind_all("<MouseWheel>", on_mousewheel)
+            
+        def unbind_mousewheel(event):
+            self.canvas.unbind_all("<MouseWheel>")
+            
+        self.canvas.bind('<Enter>', bind_mousewheel)
+        self.canvas.bind('<Leave>', unbind_mousewheel)
 
         # --- Bottom Button Frame ---
         button_frame = ttkb.Frame(main_frame)
-        button_frame.pack(fill=tk.X, pady=(10, 0))
+        button_frame.pack(fill=tk.X, pady=(15, 0))
 
         # OK button
         ok_btn = ttkb.Button(
@@ -106,6 +155,10 @@ class SymptomDialog(tk.Toplevel):
         )
         cancel_btn.pack(side=tk.RIGHT, padx=(0, 5))
         
+        # Update scroll region after all widgets are added
+        self.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        
         # Center the dialog relative to parent
         self.center_dialog(parent)
             
@@ -124,9 +177,9 @@ class SymptomDialog(tk.Toplevel):
             parent_w = parent.winfo_width()
             parent_h = parent.winfo_height()
             
-            # Use fixed dialog dimensions
-            dialog_w = 520
-            dialog_h = 650
+            # Get actual dialog dimensions
+            dialog_w = 550
+            dialog_h = 700
             
             # Calculate center position
             x = parent_x + (parent_w // 2) - (dialog_w // 2)
@@ -139,25 +192,28 @@ class SymptomDialog(tk.Toplevel):
             self.geometry(f'{dialog_w}x{dialog_h}+{x}+{y}')
         except tk.TclError:
             # Fallback to default centering if parent info unavailable
-            self.geometry("520x650")
+            self.geometry("550x700")
 
-    def add_custom_symptom_checkbox(self, container, symptom_text,
-                                    selected=False):
+    def add_custom_symptom_checkbox(self, symptom_text, selected=False):
         """Add a checkbox for a custom symptom."""
         var = tk.BooleanVar()
         var.set(selected)
         
         cb = ttkb.Checkbutton(
-            container,
+            self.scrollable_frame,
             text=f"{symptom_text} (personalizado)",
             variable=var,
             bootstyle="round-toggle",
             command=self.check_limit
         )
-        cb.pack(anchor='w', padx=20, pady=5, fill='x')
+        cb.pack(anchor='w', padx=20, pady=6, fill='x')
         self.vars[symptom_text] = var
         self.checkbuttons.append(cb)
         self.custom_symptoms.append(symptom_text)
+        
+        # Update scroll region after adding new widget
+        self.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
 
     def check_limit(self):
         """Disable checkbuttons if max selection is reached."""
@@ -193,13 +249,8 @@ class SymptomDialog(tk.Toplevel):
             
             # Add custom symptom if not already present
             if custom_text not in self.vars:
-                self.add_custom_symptom_checkbox(
-                    self.container, custom_text, True
-                )
+                self.add_custom_symptom_checkbox(custom_text, True)
                 
-            # Update the dialog to reflect the new checkbox
-            self.update_idletasks()
-            
             # Recheck the limit since we added a new selected item
             self.check_limit()
         else:
